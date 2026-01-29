@@ -1,10 +1,11 @@
-package com.project.web.domain.item;
+package com.project.web.domain.category;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.project.web.domain.BaseEntity;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -21,32 +22,37 @@ import lombok.NoArgsConstructor;
 
 /*
  * Category 클래스
- * 카테고리 테이블을 생성
+ * Category 테이블을 만드는 엔터티
+ * 
  * */
-
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Category extends BaseEntity {
-	@Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "category_id")
-	private Long id;
-	
-	private String name;
-	
-	// 부모 카테고리 ( 상위 분류 )
-	@ManyToOne(fetch = FetchType.LAZY)	// 필요할 때만 가져온다. (지연 로딩, 기본값 : EAGER)
-	@JoinColumn(name = "parent_id") // DB테이블에 ~라는 이름으로 외래키(FK) 컬럼을 생성
-	private Category parent;
-	
-	// 자식 카테고리들 (하위 분류)
-    @OneToMany(mappedBy = "parent") // DB테이블 구조 상 일대다 관계에서 다 쪽이 외래키를 가지는데 읽기 전용이라고 알려주는 것
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private String name;
+
+    // 내 부모 카테고리 (예: '의류'가 부모, '청바지'가 자식일 때 '청바지'의 parent는 '의류')
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Category parent;
+
+    // 내 자식 카테고리들
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<Category> children = new ArrayList<>();
 
     @Builder
     public Category(String name, Category parent) {
         this.name = name;
-        this.parent = parent;
+        if (parent != null) {
+            this.parent = parent;
+            // 부모 카테고리의 자식 리스트에 나(this)를 추가 (연관관계 편의 메서드)
+            this.parent.getChildren().add(this);
+        }
     }
 }

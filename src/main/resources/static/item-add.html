@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>관리자 - 상품 등록</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5" style="max-width: 600px;">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">상품 등록 (관리자용)</h4>
+        </div>
+        <div class="card-body">
+            <form id="itemForm">
+                <div class="mb-3">
+                    <label for="name" class="form-label">상품명</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="price" class="form-label">가격</label>
+                    <input type="number" class="form-control" id="price" name="price" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="stockQuantity" class="form-label">재고 수량</label>
+                    <input type="number" class="form-control" id="stockQuantity" name="stockQuantity" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="categoryId" class="form-label">카테고리 ID</label>
+                    <input type="number" class="form-control" id="categoryId" name="categoryId" placeholder="예: 1" required>
+                    <div class="form-text">DB에 존재하는 카테고리 ID를 입력하세요.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">상품 설명</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="imageFile" class="form-label">상품 이미지</label>
+                    <input type="file" class="form-control" id="imageFile" name="imageFile">
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100">등록하기</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('itemForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // 폼 기본 제출 막기
+
+        // 1. 폼 데이터 가져오기
+        const formData = new FormData(this);
+        
+     	// 저장소에서 토큰을 꺼내와서 'token'이라는 변수에 담아야 함
+        const token = localStorage.getItem('accessToken'); 
+
+        // 토큰 없으면 막는 안전장치 추가
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            window.location.href = "/login.html";
+            return;
+        }
+        // 2. 서버로 전송 (Fetch API)
+        fetch('/api/items', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token
+                // 주의: FormData 전송 시 'Content-Type'은 안적음 (브라우저가 알아서 함)
+            },
+            body: formData // 파일이 있으므로 JSON 변환 없이 formData 그대로 보냄
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.text();
+            }
+            throw new Error('등록 실패');
+        })
+        .then(data => {
+            alert(data); // "상품 등록 완료!"
+            window.location.href = "/";
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('상품 등록 중 오류가 발생했습니다. 카테고리 ID를 확인해주세요.' + error.message);
+        });
+    });
+</script>
+
+</body>
+</html>

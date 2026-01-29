@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>로그인 - Cloud Shop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light d-flex align-items-center py-5" style="min-height: 100vh;">
+    <div class="container" style="max-width: 400px;">
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4 fw-bold">로그인</h2>
+                
+                <div class="mb-3">
+                    <input type="email" id="email" class="form-control py-2" placeholder="이메일 (user@example.com)">
+                </div>
+                <div class="mb-3">
+                    <input type="password" id="password" class="form-control py-2" placeholder="비밀번호">
+                </div>
+                
+                <button onclick="login()" class="btn btn-success w-100 py-2">로그인</button>
+                
+                <div class="text-center mt-3">
+                    <a href="/join.html" class="text-decoration-none">계정이 없으신가요? 회원가입</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function login() {
+            // 1. 데이터 수집
+            const emailVal = document.getElementById('email').value;
+            const passwordVal = document.getElementById('password').value;
+
+            if(!emailVal || !passwordVal) {
+                alert("이메일과 비밀번호를 입력해주세요.");
+                return;
+            }
+
+            const reqData = {
+                email: emailVal,        // DTO도 email로 받아야 함
+                password: passwordVal
+            };
+
+            try {
+                const response = await fetch('/api/members/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reqData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // 토큰 및 정보 저장
+                    localStorage.setItem('accessToken', data.token);
+                    localStorage.setItem('userName', data.name);
+                    localStorage.setItem('role', data.role); // 권한 저장 추가
+
+                    // [버그 수정] resData -> data 로 수정했습니다.
+                    alert(data.name + "님 환영합니다!"); 
+                    
+                    window.location.href = "/"; 
+                } else {
+                    const errorMsg = await response.text(); 
+                    alert("로그인 실패: " + errorMsg);
+                }
+            } catch (error) {
+                console.error(error);
+                alert("서버 연결 에러");
+            }
+        }
+    </script>
+</body>
+</html>
