@@ -1,15 +1,31 @@
 package com.project.web.domain.review;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.project.web.domain.BaseEntity;
 import com.project.web.domain.item.Item;
 import com.project.web.domain.member.Member;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor(access = AccessLevel.PROTECTED) // 기본 생성자 (파라미터가 없는 생성자)를 생성(JPA나 Jackson(JSON 변환기)이 객체를 생성할 때 필요)
 public class Review extends BaseEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,11 +44,23 @@ public class Review extends BaseEntity {
     private String content;
     
     private int rating; // 별점
+    
+ // 리뷰에 달린 답글들 (일대다 관계)
+    @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Reply> replies = new ArrayList<>();
 
     @Builder
     public Review(Member member, Item item, String content, int rating) {
         this.member = member;
         this.item = item;
+        this.content = content;
+        this.rating = rating;
+    }
+    
+    /**
+     * 리뷰 수정 비즈니스 로직
+     */
+    public void updateReview(String content, int rating) {
         this.content = content;
         this.rating = rating;
     }

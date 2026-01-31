@@ -1,10 +1,14 @@
 package com.project.web.domain.item;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.ArrayList;
+import java.util.List;
+
 import com.project.web.domain.BaseEntity;
 import com.project.web.domain.category.Category;
 import com.project.web.domain.member.Member;
+import com.project.web.domain.review.Review;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,6 +18,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,7 +44,8 @@ public class Item extends BaseEntity {
     @Lob // Large Object. 대용량 텍스트 데이터를 저장할 때 사용 (MySQL의 TEXT/LONGTEXT 타입 매핑)
     private String description;
 
-    private String imgUrl; // 저장된 이미지 파일명 (UUID 포함)
+    @jakarta.persistence.Column(name = "imgUrl") // [추가] DB 컬럼명을 'img_url'로 고정
+    private String imageUrl; // 저장된 이미지 파일명 (UUID 포함)
 
     @Column(columnDefinition = "CHAR(1) default 'N'") // 삭제 여부 (Y/N). 실수로 삭제해도 복구할 수 있게 데이터를 남겨둠 (Soft Delete)
     private String delYn;
@@ -54,14 +60,18 @@ public class Item extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "seller_id") // 판매자별 상품 조회 기능을 위함
     private Member seller;
-
+    
+    // 리뷰 목록
+    @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Review> reviews = new ArrayList<>();
+    
     @Builder // 빌더 패턴을 적용하여 객체 생성 시 가독성을 높이고, 생성자 파라미터 순서 실수를 방지
-    public Item(String name, int price, int stockQuantity, String description, String imgUrl, Category category, Member seller) {
+    public Item(String name, int price, int stockQuantity, String description, String imageUrl, Category category, Member seller) {
         this.name = name;
         this.price = price;
         this.stockQuantity = stockQuantity;
         this.description = description;
-        this.imgUrl = imgUrl;
+        this.imageUrl = imageUrl;
         this.category = category;
         this.seller = seller;
         this.delYn = "N"; // 생성 시 삭제 여부 기본값 N
@@ -79,5 +89,10 @@ public class Item extends BaseEntity {
     // 비즈니스 로직: 재고 증가 (주문 취소 시 호출)
     public void addStock(int count) {
         this.stockQuantity += count;
+    }
+    
+ // 상품 등록/수정 시 카테고리를 넣기 위한 메서드
+    public void setCategory(Category category) {
+        this.category = category;
     }
 }

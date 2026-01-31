@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>마이페이지 - 내 주문 내역</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .repImg {
+            height: 100px;
+            width: 100px;
+            object-fit: cover;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .fs-18 {
+            font-size: 18px;
+        }
+        /* 페이지네이션 커스텀 (필요시) */
+        .page-link { cursor: pointer; }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">Shop</a>
+    </div>
+</nav>
+
+<div class="container">
+    <h2 class="mb-4">📦 구매 이력</h2>
+
+    <div id="order-list">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p>주문 내역을 불러오는 중...</p>
+        </div>
+    </div>
+
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center" id="pagination-area">
+            </ul>
+    </nav>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        loadOrderHist(0); // 처음엔 0페이지 로드
+    });
+
+    function loadOrderHist(page) {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            alert("로그인이 필요합니다.");
+            window.location.href = '/login.html';
+            return;
+        }
+
+        // ★ URL에 page 파라미터 추가 (?page=0, ?page=1 ...)
+        fetch(`/api/orders?page=${page}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + token
+            } 
+        })
+        .then(res => {
+            if (res.status === 401) {
+                alert("세션이 만료되었습니다.");
+                window.location.href = '/login.html';
+                return;
+            }
+            return res.json();
+        })
+        .then(data => {
+            //  백엔드에서 Page 객체를 반환하므로 data.content가 진짜 리스트임
+            const orders = data.content; 
+            const listArea = document.getElementById('order-list');
+            listArea.innerHTML = '';
+
+            if (orders.length === 0) {
+                listArea.innerHTML = '<div class="text-center py-5 text-muted"><h4>주문 내역이 없습니다.</h4></div>';
+                document.getElementById('pagination-area').innerHTML = ''; // 버튼도 삭제
+                return;
+            }
+
+            orders.forEach(order => {
+                let orderItemsHtml = '';
+
+                //  DTO 필드명 확인 필요 (orderItemDTOList 인지 orderItemDtoList 인지)
+                // Java에서 List<OrderItemDTO> orderItemDTOList 라고 했으면 getter는 getOrderItemDTOList() -> JSON은 orderItemDTOList
+                order.orderItemDTOList.forEach(item => {
+                    const imgUrl = item.imageUrl ? `/images/${item.imageUrl}` : 'https://dummyimage.com/100x100/dee2e6/6c757d.jpg';
+                    
+                    orderItemsHtml += `
+                        <div class="d-flex mb-3">
+                            <div class="flex-shrink-0">
+                                <img src="${imgUrl}" class="repImg rounded" alt="${item.itemName}">
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fs-18 font-weight-bold">${item.itemName}</div>
+                                <div class="fs-18">
+                                    <span class="text-danger">${item.orderPrice.toLocaleString()}원</span>
+                                    <span class="text-muted ms-2">${item.count}개</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                let cancelButton = '';
+                if (order.orderStatus === 'ORDER') {
+                    cancelButton = `<button type="button" class="btn btn-outline-secondary" onclick="cancelOrder(${order.orderId})">주문 취소</button>`;
+                } else {
+                    cancelButton = `<button type="button" class="btn btn-outline-secondary" disabled>취소 완료</button>`;
+                }
+
+                const html = `
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">${order.orderDate} <small class="text-muted">주문</small></h5>
+                            <div>${cancelButton}</div>
+                        </div>
+                        <div class="card-body">${orderItemsHtml}</div>
+                    </div>
+                `;
+                listArea.insertAdjacentHTML('beforeend', html);
+            });
+
+            // ★ 페이지네이션 버튼 그리기 함수 호출
+            renderPagination(data);
+        })
+        .catch(err => console.error(err));
+    }
+
+ // [페이지네이션 버튼 그리기 - 5개씩 끊어서 보여주기]
+    function renderPagination(pageData) {
+        const paginationArea = document.getElementById('pagination-area');
+        paginationArea.innerHTML = '';
+
+        const totalPages = pageData.totalPages; // 전체 페이지 수
+        const currPage = pageData.number;       // 현재 페이지 (0부터 시작)
+        const blockLimit = 5;                   // 한 번에 보여줄 페이지 번호 개수
+
+        if (totalPages <= 1) return;
+
+        // 보여줄 시작 페이지와 끝 페이지 계산
+        // 예: 현재 7페이지(index 6)라면, startPage는 5, endPage는 10이 됨
+        const startPage = Math.floor(currPage / blockLimit) * blockLimit;
+        const endPage = Math.min(startPage + blockLimit, totalPages);
+
+        // 1. <이전 블록> 버튼 (첫 블록이면 비활성화가 아니라 아예 숨김 or 비활성)
+        // 0페이지가 아니라 현재 블록의 시작보다 앞쪽으로 가야 함
+        const prevDisabled = (startPage === 0) ? 'disabled' : '';
+        const prevPage = Math.max(0, startPage - 1); // 이전 블록의 마지막 페이지로 이동
+        
+        let prevBtn = `
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" onclick="loadOrderHist(${prevPage}); return false;">이전</a>
+            </li>`;
+        paginationArea.insertAdjacentHTML('beforeend', prevBtn);
+
+        // 2. 페이지 번호 버튼 (startPage ~ endPage 까지만 반복)
+        for (let i = startPage; i < endPage; i++) {
+            let activeClass = (i === currPage) ? 'active' : '';
+            let numBtn = `
+                <li class="page-item ${activeClass}">
+                    <a class="page-link" href="#" onclick="loadOrderHist(${i}); return false;">${i + 1}</a>
+                </li>`;
+            paginationArea.insertAdjacentHTML('beforeend', numBtn);
+        }
+
+        // 3. <다음 블록> 버튼
+        const nextDisabled = (endPage >= totalPages) ? 'disabled' : '';
+        const nextPage = endPage; // 다음 블록의 첫 페이지로 이동
+        
+        let nextBtn = `
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" onclick="loadOrderHist(${nextPage}); return false;">다음</a>
+            </li>`;
+        paginationArea.insertAdjacentHTML('beforeend', nextBtn);
+    }
+
+    // [주문 취소 함수] (기존 동일)
+    function cancelOrder(orderId) {
+        if (!confirm("주문을 취소하시겠습니까?")) return;
+        const token = localStorage.getItem('accessToken');
+        
+        fetch(`/api/orders/${orderId}/cancel`, { // API 주소 확인 필요
+            method: 'POST', // or DELETE/PATCH
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => {
+            if(!res.ok) throw new Error("취소 실패");
+            alert("주문이 취소되었습니다.");
+            loadOrderHist(0); // 첫 페이지로 새로고침
+        })
+        .catch(err => alert(err.message));
+    }
+</script>
+
+</body>
+</html>

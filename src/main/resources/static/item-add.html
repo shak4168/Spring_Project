@@ -30,9 +30,10 @@
                 </div>
 
                 <div class="mb-3">
-                    <label for="categoryId" class="form-label">카테고리 ID</label>
-                    <input type="number" class="form-control" id="categoryId" name="categoryId" placeholder="예: 1" required>
-                    <div class="form-text">DB에 존재하는 카테고리 ID를 입력하세요.</div>
+                    <label for="categoryId" class="form-label">카테고리</label>
+                    <select class="form-select" id="categoryId" name="categoryId" required>
+                        <option value="">카테고리를 선택하세요</option>
+                        </select>
                 </div>
 
                 <div class="mb-3">
@@ -52,29 +53,53 @@
 </div>
 
 <script>
-    document.getElementById('itemForm').addEventListener('submit', function(event) {
-        event.preventDefault(); // 폼 기본 제출 막기
+    // 1. 페이지 로드 시 카테고리 목록 불러오기
+    document.addEventListener("DOMContentLoaded", () => {
+        loadCategories();
+    });
 
-        // 1. 폼 데이터 가져오기
+    function loadCategories() {
+        fetch('/api/categories')
+            .then(res => res.json())
+            .then(categories => {
+                const selectBox = document.getElementById('categoryId');
+                
+             // [수정된 코드] 자식 카테고리만 보여주거나, "부모 > 자식" 형태로 표시
+                categories.forEach(category => {
+                    // 1. 보여줄 텍스트 결정
+                    let displayName = category.name;
+                    
+                    // 만약 백엔드 DTO에 parentName 같은 정보가 있다면 "패션 > 상의" 처럼 만들기 가능
+                    // 현재는 간단하게 모든 카테고리를 나열
+                    
+                    const option = document.createElement('option');
+                    option.value = category.id;
+                    option.textContent = displayName;
+                    selectBox.appendChild(option);
+                });
+            })
+            .catch(err => console.error("카테고리 로딩 실패:", err));
+    }
+
+    // 2. 상품 등록 로직 (기존과 동일)
+    document.getElementById('itemForm').addEventListener('submit', function(event) {
+        event.preventDefault(); 
+
         const formData = new FormData(this);
-        
-     	// 저장소에서 토큰을 꺼내와서 'token'이라는 변수에 담아야 함
         const token = localStorage.getItem('accessToken'); 
 
-        // 토큰 없으면 막는 안전장치 추가
         if (!token) {
             alert("로그인이 필요합니다.");
             window.location.href = "/login.html";
             return;
         }
-        // 2. 서버로 전송 (Fetch API)
+
         fetch('/api/items', {
             method: 'POST',
             headers: {
                 'Authorization': 'Bearer ' + token
-                // 주의: FormData 전송 시 'Content-Type'은 안적음 (브라우저가 알아서 함)
             },
-            body: formData // 파일이 있으므로 JSON 변환 없이 formData 그대로 보냄
+            body: formData 
         })
         .then(response => {
             if (response.ok) {
@@ -83,12 +108,12 @@
             throw new Error('등록 실패');
         })
         .then(data => {
-            alert(data); // "상품 등록 완료!"
+            alert(data); 
             window.location.href = "/";
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('상품 등록 중 오류가 발생했습니다. 카테고리 ID를 확인해주세요.' + error.message);
+            alert('상품 등록 중 오류가 발생했습니다. ' + error.message);
         });
     });
 </script>

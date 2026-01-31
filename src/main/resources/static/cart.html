@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>장바구니 - Shop</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .cart-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-5">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">Shop</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="mb-4 fw-bold">🛒 나의 장바구니</h2>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col" class="py-3 ps-4">상품 정보</th>
+                                    <th scope="col" class="py-3">수량</th>
+                                    <th scope="col" class="py-3">가격</th>
+                                    <th scope="col" class="py-3 text-end pe-4">관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cart-list">
+                                </tbody>
+                        </table>
+                        <div id="empty-message" class="text-center py-5 d-none">
+                            <p class="text-muted mb-3">장바구니에 담긴 상품이 없습니다.</p>
+                            <a href="/" class="btn btn-primary">쇼핑하러 가기</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white py-3">
+                        <h5 class="mb-0 fw-bold">결제 예정 금액</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <span class="text-muted">총 상품금액</span>
+                            <strong id="total-price-display">0원</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-4">
+                            <span class="text-muted">배송비</span>
+                            <strong>무료</strong>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-4">
+                            <span class="fs-5 fw-bold">최종 결제 금액</span>
+                            <span class="fs-5 fw-bold text-danger" id="final-price-display">0원</span>
+                        </div>
+                        
+                        <button class="btn btn-dark w-100 btn-lg" onclick="orderAll()">
+                            전체 주문하기
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 페이지 로드 시 장바구니 목록 불러오기
+        document.addEventListener("DOMContentLoaded", () => {
+            loadCart();
+        });
+
+        // 1. 장바구니 목록 조회 함수
+        function loadCart() {
+            const token = localStorage.getItem('accessToken');
+            
+            // 로그인 안 했으면 로그인 페이지로
+            if (!token) {
+                alert("로그인이 필요한 서비스입니다.");
+                window.location.href = '/login.html';
+                return;
+            }
+
+            fetch('/api/cart', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+                    window.location.href = '/login.html';
+                    return;
+                }
+                return res.json();
+            })
+            .then(list => {
+                const listBody = document.getElementById('cart-list');
+                const emptyMsg = document.getElementById('empty-message');
+                let totalPrice = 0;
+
+                listBody.innerHTML = ''; // 목록 초기화
+
+                if (list.length === 0) {
+                    emptyMsg.classList.remove('d-none'); // 비었다는 메시지 표시
+                } else {
+                    emptyMsg.classList.add('d-none'); // 메시지 숨김
+                    
+                    list.forEach(item => {
+                        const img = item.imageUrl ? `/images/${item.imageUrl}` : 'https://dummyimage.com/100x100/dee2e6/6c757d.jpg';
+                        const itemTotal = item.price * item.count;
+                        totalPrice += itemTotal;
+
+                        // 테이블 행(Row) 생성
+                        const row = `
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <img src="${img}" alt="${item.itemName}" class="cart-img me-3">
+                                        <div>
+                                            <a href="/item-detail.html?id=${item.itemId}" class="text-decoration-none text-dark fw-bold">${item.itemName}</a>
+                                            <div class="text-muted small">${item.price.toLocaleString()}원</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">${item.count}개</span>
+                                </td>
+                                <td class="fw-bold text-danger">${itemTotal.toLocaleString()}원</td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="deleteCartItem(${item.cartItemId})">삭제</button>
+                                </td>
+                            </tr>
+                        `;
+                        listBody.insertAdjacentHTML('beforeend', row);
+                    });
+                }
+
+                // 총 가격 업데이트
+                document.getElementById('total-price-display').innerText = totalPrice.toLocaleString() + "원";
+                document.getElementById('final-price-display').innerText = totalPrice.toLocaleString() + "원";
+            })
+            .catch(err => {
+                console.error(err);
+                alert("장바구니 정보를 불러오지 못했습니다.");
+            });
+        }
+
+        // 2. 전체 주문하기 함수
+        function orderAll() {
+            const token = localStorage.getItem('accessToken');
+            
+            // 장바구니가 비어있는지 화면의 가격으로 확인 (간단 체크)
+            const priceText = document.getElementById('final-price-display').innerText;
+            if (priceText === "0원") {
+                alert("장바구니가 비어있습니다.");
+                return;
+            }
+
+            if (!confirm("장바구니의 모든 상품을 주문하시겠습니까?")) {
+                return;
+            }
+
+            // 주문 API 호출
+            fetch('/api/cart/order', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    alert("세션이 만료되었습니다.");
+                    window.location.href = '/login.html';
+                    return;
+                }
+                if (!res.ok) {
+                    return res.text().then(text => { throw new Error(text) });
+                }
+                return res.text();
+            })
+            .then(msg => {
+                alert(msg); // "주문이 완료되었습니다!"
+                window.location.href = '/'; // 메인으로 이동 (추후 주문내역 페이지로 변경)
+            })
+            .catch(err => {
+                console.error(err);
+                alert("주문 실패: " + err.message);
+            });
+        }
+
+        // 3. 개별 삭제 버튼 함수
+        function deleteCartItem(cartItemId) {
+            if(!confirm("정말 삭제하시겠습니까?")) {
+                return;
+            }
+            
+            const token = localStorage.getItem('accessToken');
+            
+            fetch(`/api/cart/${cartItemId}`, { // PathVariable로 ID 전달
+                method: 'DELETE', // DELETE 메서드 사용
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(res => {
+                if (res.status === 401) {
+                    alert("세션이 만료되었습니다.");
+                    window.location.href = '/login.html';
+                    return;
+                }
+                if (!res.ok) {
+                    return res.text().then(text => { throw new Error(text) });
+                }
+                return res.text();
+            })
+            .then(msg => {
+                alert(msg); // "삭제되었습니다."
+                loadCart(); // 목록 새로고침 (화면 갱신)
+            })
+            .catch(err => {
+                console.error(err);
+                alert("삭제 실패: " + err.message);
+            });
+        }
+    </script>
+</body>
+</html>

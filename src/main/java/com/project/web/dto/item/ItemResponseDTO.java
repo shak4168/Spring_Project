@@ -17,6 +17,6 @@ public class ItemResponseDTO {
         this.name = item.getName();
         this.price = item.getPrice();
         this.description = item.getDescription();
-        this.imageUrl = item.getImgUrl();
+        this.imageUrl = item.getImageUrl();
     }
 }

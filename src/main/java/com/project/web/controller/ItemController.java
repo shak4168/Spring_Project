@@ -2,17 +2,21 @@ package com.project.web.controller;
 
 import java.io.IOException;
 import java.security.Principal;
-import java.util.List;
-import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.project.web.domain.item.Item;
+import com.project.web.dto.item.ItemDetailResponseDTO;
 import com.project.web.dto.item.ItemFormRequestDTO;
 import com.project.web.dto.item.ItemResponseDTO;
 import com.project.web.service.ItemService;
@@ -20,14 +24,8 @@ import com.project.web.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-/*
- * ItemController 클래스
- * 
- * 
- * */
-
 @Slf4j
-@RestController // 데이터를 JSON 등으로 반환하는 API 컨트롤러
+@RestController
 @RequestMapping("/api/items")
 @RequiredArgsConstructor
 public class ItemController {
@@ -38,7 +36,6 @@ public class ItemController {
      * 상품 등록 API
      * 권한: 관리자(ADMIN)만 가능해야 함 (지금은 누구나 가능하게 열어둠)
      */
- // 상품 등록 API
     @PostMapping
     public ResponseEntity<String> createItem(
             @ModelAttribute ItemFormRequestDTO requestDTO,
@@ -55,16 +52,33 @@ public class ItemController {
         return ResponseEntity.ok("상품이 성공적으로 등록되었습니다!");
     }
     
- // 추가: 모든 상품 목록 조회 API
+    /**
+     * 상품 목록 조회 API (페이징 + 카테고리 적용)
+     * [GET] /api/items?page=0&categoryId=1
+     * ★ 기존의 List<ItemResponseDTO>를 반환하던 메서드는 삭제했습니다.
+     */
     @GetMapping
-    public ResponseEntity<List<ItemResponseDTO>> getItems() {
-        List<Item> items = itemService.findAllItems();
+    public ResponseEntity<Page<ItemResponseDTO>> getItems(
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "categoryId", required = false) Long categoryId
+    ) {
+        // 1. 페이지 설정: 한 페이지에 8개씩, ID 역순(최신순)으로 정렬
+        Pageable pageable = PageRequest.of(page, 8, Sort.by("id").descending());
         
-        // 실무 스타일: 엔티티 리스트를 DTO 리스트로 변환 (Stream API 활용)
-        List<ItemResponseDTO> responseDTOs = items.stream()
-                .map(ItemResponseDTO::new)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(responseDTOs);
+        // 2. 서비스 호출 (Service도 수정되어 있어야 함)
+        Page<ItemResponseDTO> result = itemService.getMainItemPage(categoryId, pageable);
+        
+        // 3. 반환 (프론트엔드 페이징 지원)
+        return ResponseEntity.ok(result);
+    }
+    
+    /*
+     * 상품 상세 조회 API
+     * [GET] /api/items/{itemId}
+     */
+    @GetMapping("/{itemId}")
+    public ResponseEntity<ItemDetailResponseDTO> getItemDetail(@PathVariable("itemId") Long itemId) {
+        ItemDetailResponseDTO itemDetail = itemService.getItemDetail(itemId);
+        return ResponseEntity.ok(itemDetail);
     }
 }

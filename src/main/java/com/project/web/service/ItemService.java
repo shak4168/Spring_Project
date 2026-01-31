@@ -2,19 +2,25 @@ package com.project.web.service;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.project.web.domain.category.Category;
 import com.project.web.domain.item.Item;
 import com.project.web.domain.member.Member;
+import com.project.web.dto.item.ItemDetailResponseDTO;
 import com.project.web.dto.item.ItemFormRequestDTO;
+import com.project.web.dto.item.ItemResponseDTO;
 import com.project.web.repository.CategoryRepository;
 import com.project.web.repository.ItemRepository;
 import com.project.web.repository.MemberRepository;
 import com.project.web.util.FileStore;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 /*
  * ItemService 클래스
@@ -51,15 +57,15 @@ public class ItemService {
         // 3. 이미지 파일 저장
         String storeFileName = fileStore.storeFile(dto.getImageFile());
 
-        // 4. 상품 엔티티 생성 (imgUrl -> imageUrl 등 필드명 오타 주의!)
+        // 4. 상품 엔티티 생성
         Item item = Item.builder()
                 .name(dto.getName())
                 .price(dto.getPrice())
                 .stockQuantity(dto.getStockQuantity())
                 .description(dto.getDescription())
-                .imgUrl(storeFileName) // 엔티티 필드명과 맞춰주세요
+                .imageUrl(storeFileName)
                 .category(category)    
-                .seller(seller)          // [추가] 판매자 주입
+                .seller(seller)          
                 .build();
 
         // 5. 상품 저장
@@ -68,7 +74,69 @@ public class ItemService {
         return savedItem.getId();
     }
     
+    public ItemDetailResponseDTO getItemDetail(Long itemId) {
+        // 1. 상품 조회 (삭제되지 않은 상품만 조회 로직은 나중에 QueryDSL이나 커스텀 메서드로 고도화 가능)
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 상품입니다."));
+
+        // 2. Soft Delete 체크 (이미 삭제된 상품이면 예외 발생)
+        if ("Y".equals(item.getDelYn())) {
+            throw new EntityNotFoundException("이미 삭제된 상품입니다.");
+        }
+
+        // 3. Entity -> DTO 변환 
+        // Batch Size 설정 덕분에 여기서 getReviews(), getReplies() 호출 시 쿼리가 최적화되어 나감
+        return ItemDetailResponseDTO.builder()
+                .itemId(item.getId())
+                .name(item.getName())
+                .description(item.getDescription())
+                .price(item.getPrice())
+                .stockNumber(item.getStockQuantity())
+                .imageUrl(item.getImageUrl()) // 이미지 경로 추가
+                .reviews(item.getReviews().stream()
+                        .map(review -> ItemDetailResponseDTO.ReviewDTO.builder()
+                            .reviewId(review.getId())
+                            .content(review.getContent())
+                            .writerName(review.getMember().getName()) // Member 엔티티에 getName()이 있는지 꼭 확인
+                            .rating(review.getRating())
+                            .regDate(review.getCreatedAt())
+                            .replies(review.getReplies().stream()
+                                .map(reply -> ItemDetailResponseDTO.ReplyDTO.builder()
+                                    .replyId(reply.getId())
+                                    .content(reply.getContent())
+                                    .writerName(reply.getMember().getName())
+                                    .regDate(reply.getCreatedAt())
+                                    .build())
+                                .collect(Collectors.toList()))
+                            .build())
+                        .collect(Collectors.toList()))
+                    .build();
+    }
+    
     public List<Item> findAllItems() {
     	return itemRepository.findAll();
     	}
+    
+    
+    /**
+     * 메인 페이지 상품 목록 조회 (페이징 + 카테고리 필터링)
+     */
+    public Page<ItemResponseDTO> getMainItemPage(Long categoryId, Pageable pageable) {
+        
+        Page<Item> itemPage;
+
+        // 1. 카테고리 ID 유무에 따른 분기 처리
+        if (categoryId == null) {
+            // 카테고리가 없으면 전체 조회
+            itemPage = itemRepository.findAll(pageable);
+        } else {
+            // 카테고리가 있으면 해당 카테고리 상품만 조회
+            itemPage = itemRepository.findByCategoryId(categoryId, pageable);
+        }
+
+        // 2. Entity(Item) -> DTO(ItemResponseDTO) 변환
+        // Page 객체의 map 기능을 쓰면 내부 내용물을 아주 쉽게 바꿀 수 있음
+        return itemPage.map(item -> new ItemResponseDTO(item));
+    }
+    
 }
