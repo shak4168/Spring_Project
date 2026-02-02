@@ -45,16 +45,20 @@ public class Review extends BaseEntity {
     
     private int rating; // 별점
     
+    // 구매 확인 여부를 필드로 두어 조회 성능 최적화
+    private boolean isPurchased;
+    
  // 리뷰에 달린 답글들 (일대다 관계)
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reply> replies = new ArrayList<>();
 
     @Builder
-    public Review(Member member, Item item, String content, int rating) {
+    public Review(Member member, Item item, String content, int rating, boolean isPurchased) {
         this.member = member;
         this.item = item;
         this.content = content;
         this.rating = rating;
+        this.isPurchased = isPurchased;
     }
     
     /**

@@ -39,11 +39,48 @@
         </div>
     </div>
 
-    <nav aria-label="Page navigation" class="mt-4">
+    <nav aria-label="Page navigation" class="mt-4 mb-5">
         <ul class="pagination justify-content-center" id="pagination-area">
-            </ul>
+        </ul>
     </nav>
 </div>
+
+<div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">리뷰 작성</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="modalItemId">
+                
+                <form id="reviewForm">
+                    <div class="mb-3">
+                        <label for="reviewRating" class="form-label">별점</label>
+                        <select class="form-select" id="reviewRating">
+                            <option value="5">★★★★★ (5점)</option>
+                            <option value="4">★★★★ (4점)</option>
+                            <option value="3">★★★ (3점)</option>
+                            <option value="2">★★ (2점)</option>
+                            <option value="1">★ (1점)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reviewContent" class="form-label">내용</label>
+                        <textarea class="form-control" id="reviewContent" rows="3" placeholder="솔직한 후기를 남겨주세요." required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                <button type="button" class="btn btn-primary" onclick="submitReview()">등록</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -89,12 +126,28 @@
                 let orderItemsHtml = '';
 
                 //  DTO 필드명 확인 필요 (orderItemDTOList 인지 orderItemDtoList 인지)
-                // Java에서 List<OrderItemDTO> orderItemDTOList 라고 했으면 getter는 getOrderItemDTOList() -> JSON은 orderItemDTOList
                 order.orderItemDTOList.forEach(item => {
+                    // 이미지 없으면 더미 이미지 사용 (방어 코드)
                     const imgUrl = item.imageUrl ? `/images/${item.imageUrl}` : 'https://dummyimage.com/100x100/dee2e6/6c757d.jpg';
                     
+                    // [Senior Tip] 리뷰 버튼 생성 로직 (조건부 렌더링)
+                    // 1. 주문 상태가 'ORDER(구매완료)' 여야 함.
+                    // 2. item.hasReview 값을 확인하여 버튼 상태 결정.
+                    let reviewBtnHtml = '';
+                    
+                    if (order.orderStatus === 'ORDER') {
+                        if (item.hasReview) {
+                            // [CASE A] 이미 리뷰를 작성한 경우 -> 버튼 비활성화 (Disabled)
+                            reviewBtnHtml = `<button class="btn btn-sm btn-secondary ms-auto" disabled>작성 완료</button>`;
+                        } else {
+                            // [CASE B] 리뷰를 아직 안 쓴 경우 -> 리뷰 쓰기 버튼 활성화
+                            // 클릭 시 openReviewModal에 상품 ID를 전달합니다.
+                            reviewBtnHtml = `<button type="button" class="btn btn-sm btn-outline-primary ms-auto" onclick="openReviewModal(${item.itemId})">리뷰 쓰기</button>`;
+                        }
+                    }
+
                     orderItemsHtml += `
-                        <div class="d-flex mb-3">
+                        <div class="d-flex mb-3 align-items-center border-bottom pb-3">
                             <div class="flex-shrink-0">
                                 <img src="${imgUrl}" class="repImg rounded" alt="${item.itemName}">
                             </div>
@@ -105,6 +158,9 @@
                                     <span class="text-muted ms-2">${item.count}개</span>
                                 </div>
                             </div>
+                            <div class="ms-3">
+                                ${reviewBtnHtml}
+                            </div>
                         </div>
                     `;
                 });
@@ -113,6 +169,7 @@
                 if (order.orderStatus === 'ORDER') {
                     cancelButton = `<button type="button" class="btn btn-outline-secondary" onclick="cancelOrder(${order.orderId})">주문 취소</button>`;
                 } else {
+                    // 취소 완료된 주문은 버튼 비활성화
                     cancelButton = `<button type="button" class="btn btn-outline-secondary" disabled>취소 완료</button>`;
                 }
 
@@ -134,7 +191,7 @@
         .catch(err => console.error(err));
     }
 
- // [페이지네이션 버튼 그리기 - 5개씩 끊어서 보여주기]
+    // [페이지네이션 버튼 그리기 - 5개씩 끊어서 보여주기]
     function renderPagination(pageData) {
         const paginationArea = document.getElementById('pagination-area');
         paginationArea.innerHTML = '';
@@ -146,14 +203,12 @@
         if (totalPages <= 1) return;
 
         // 보여줄 시작 페이지와 끝 페이지 계산
-        // 예: 현재 7페이지(index 6)라면, startPage는 5, endPage는 10이 됨
         const startPage = Math.floor(currPage / blockLimit) * blockLimit;
         const endPage = Math.min(startPage + blockLimit, totalPages);
 
-        // 1. <이전 블록> 버튼 (첫 블록이면 비활성화가 아니라 아예 숨김 or 비활성)
-        // 0페이지가 아니라 현재 블록의 시작보다 앞쪽으로 가야 함
+        // 1. <이전 블록> 버튼
         const prevDisabled = (startPage === 0) ? 'disabled' : '';
-        const prevPage = Math.max(0, startPage - 1); // 이전 블록의 마지막 페이지로 이동
+        const prevPage = Math.max(0, startPage - 1); 
         
         let prevBtn = `
             <li class="page-item ${prevDisabled}">
@@ -161,7 +216,7 @@
             </li>`;
         paginationArea.insertAdjacentHTML('beforeend', prevBtn);
 
-        // 2. 페이지 번호 버튼 (startPage ~ endPage 까지만 반복)
+        // 2. 페이지 번호 버튼
         for (let i = startPage; i < endPage; i++) {
             let activeClass = (i === currPage) ? 'active' : '';
             let numBtn = `
@@ -173,7 +228,7 @@
 
         // 3. <다음 블록> 버튼
         const nextDisabled = (endPage >= totalPages) ? 'disabled' : '';
-        const nextPage = endPage; // 다음 블록의 첫 페이지로 이동
+        const nextPage = endPage; 
         
         let nextBtn = `
             <li class="page-item ${nextDisabled}">
@@ -187,8 +242,8 @@
         if (!confirm("주문을 취소하시겠습니까?")) return;
         const token = localStorage.getItem('accessToken');
         
-        fetch(`/api/orders/${orderId}/cancel`, { // API 주소 확인 필요
-            method: 'POST', // or DELETE/PATCH
+        fetch(`/api/orders/${orderId}/cancel`, { 
+            method: 'POST', 
             headers: {
                 'Authorization': 'Bearer ' + token,
                 'Content-Type': 'application/json'
@@ -200,6 +255,81 @@
             loadOrderHist(0); // 첫 페이지로 새로고침
         })
         .catch(err => alert(err.message));
+    }
+
+    // --- [Senior Tip] 리뷰 관련 기능 추가 ---
+
+    // 1. 모달 열기 함수 (리뷰 쓰기 버튼 클릭 시 실행)
+    function openReviewModal(itemId) {
+        // 클릭한 상품의 ID를 hidden input에 저장해둡니다. 
+        // 그래야 나중에 "등록" 버튼을 눌렀을 때 어떤 상품 리뷰인지 알 수 있습니다.
+        document.getElementById('modalItemId').value = itemId; 
+        
+        // 입력창 내용을 깨끗하게 초기화
+        document.getElementById('reviewContent').value = '';   
+        document.getElementById('reviewRating').value = '5';   
+        
+        // 부트스트랩 모달 띄우기 코드
+        const modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+        modal.show();
+    }
+
+    // 2. 리뷰 등록 API 호출 (모달 안의 등록 버튼 클릭 시 실행)
+    function submitReview() {
+        const token = localStorage.getItem('accessToken');
+        
+        // hidden input에 저장해둔 itemId를 가져옵니다.
+        const itemId = document.getElementById('modalItemId').value;
+        const rating = document.getElementById('reviewRating').value;
+        const content = document.getElementById('reviewContent').value;
+
+        // 간단한 유효성 검사
+        if (!content.trim()) {
+            alert("리뷰 내용을 입력해주세요.");
+            return;
+        }
+
+        // 백엔드(ReviewRequestDTO) 스펙에 맞춰 JSON 데이터 준비
+        const data = {
+            itemId: parseInt(itemId),
+            rating: parseInt(rating),
+            content: content
+        };
+
+        // API 호출
+        fetch('/api/reviews', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(data)
+        })
+        .then(res => {
+            // 403 Forbidden: "구매 확정 상품만..." 또는 "이미 작성함" 에러 처리
+            if (!res.ok) {
+                return res.text().then(msg => { throw new Error(msg); });
+            }
+            return res.text();
+        })
+        .then(() => {
+            alert("리뷰가 등록되었습니다!");
+            
+            // 모달 닫기
+            const modalEl = document.getElementById('reviewModal');
+            // 이미 열려있는 모달 인스턴스를 가져와서 닫음
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            modal.hide();
+
+            // [중요] 목록 새로고침 
+            // 새로고침을 해야 백엔드에서 갱신된 hasReview 값을 다시 받아와서
+            // 버튼이 '작성 완료'로 바뀝니다.
+            loadOrderHist(0); 
+        })
+        .catch(err => {
+            // 백엔드에서 보낸 에러 메시지를 alert 창에 띄움
+            alert(err.message);
+        });
     }
 </script>
 

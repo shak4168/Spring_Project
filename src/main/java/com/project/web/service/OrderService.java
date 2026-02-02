@@ -24,6 +24,7 @@ import com.project.web.repository.CartRepository;
 import com.project.web.repository.ItemRepository;
 import com.project.web.repository.MemberRepository;
 import com.project.web.repository.OrderRepository;
+import com.project.web.repository.ReviewRepository;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class OrderService {
     private final ItemRepository itemRepository;
     private final CartRepository cartRepository;
     private final CartItemRepository cartItemRepository;
+    private final ReviewRepository reviewRepository;
     
     /*
      * [주문]
@@ -149,6 +151,10 @@ public class OrderService {
     @Transactional(readOnly = true)
     public Page<OrderHistDTO> getOrderList(String email, Pageable pageable) {
 
+        // 리뷰 작성 여부를 확인하기 위해, 현재 로그인한 회원 정보를 가져옵니다.
+        Member member = memberRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("회원 정보가 없습니다."));
+
         // 1. 리포지토리에서 페이징된 주문 목록 가져오기
         Page<Orders> ordersPage = orderRepository.findOrders(email, pageable);
         
@@ -162,12 +168,13 @@ public class OrderService {
             // 주문에 포함된 상품들(OrderItem) 반복
             for (OrderItem orderItem : order.getOrderItems()) {
                 
-                // 이미지 URL을 따로 꺼낼 필요 없이, 
-                // DTO 생성자가 알아서 item.getImageUrl()을 호출하므로
-                // orderItem 객체 하나만 넘기면 된다.
-                OrderItemDTO orderItemDTO = new OrderItemDTO(orderItem);
+            	// 1. 리뷰 작성 여부를 먼저 확인
+                boolean hasReview = reviewRepository.existsByMemberAndItem(member, orderItem.getItem());
                 
-                // 리스트에 추가
+                // 2. DTO 생성 시점에 hasReview 전달
+                OrderItemDTO orderItemDTO = new OrderItemDTO(orderItem, hasReview);
+                
+                // 3. 리스트에 추가
                 orderHistDTO.addOrderItemDTO(orderItemDTO);
             }
 

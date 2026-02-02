@@ -3,6 +3,8 @@ package com.project.web.domain.item;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.annotations.ColumnDefault;
+
 import com.project.web.domain.BaseEntity;
 import com.project.web.domain.category.Category;
 import com.project.web.domain.member.Member;
@@ -50,6 +52,17 @@ public class Item extends BaseEntity {
     @Column(columnDefinition = "CHAR(1) default 'N'") // 삭제 여부 (Y/N). 실수로 삭제해도 복구할 수 있게 데이터를 남겨둠 (Soft Delete)
     private String delYn;
 
+    
+    // 리뷰 개수와 평균 평점 (조회 성능 최적화를 위한 반정규화 필드)
+    // null 방지를 위해 primitive type 사용 및 DB Default 값 설정
+    @Column(nullable = false)
+    @ColumnDefault("0") 
+    private int reviewCount; 
+
+    @Column(nullable = false)
+    @ColumnDefault("0.0")
+    private double averageRating;
+    
     //@JsonIgnore
     // 상품은 반드시 하나의 카테고리에 속해야함
     @ManyToOne(fetch = FetchType.LAZY) // 다대일 관계 설정 (Item N : 1 Category),  fetch = FetchType.LAZY (지연 로딩) 데이터를 바로 가져오지 않고, 실제 필드에 접근할 때 쿼리를 날림, 성능 최적화(N+1 문제 방지)를 위함
@@ -75,6 +88,8 @@ public class Item extends BaseEntity {
         this.category = category;
         this.seller = seller;
         this.delYn = "N"; // 생성 시 삭제 여부 기본값 N
+        this.reviewCount = 0;
+        this.averageRating = 0.0;
     }
     
     // 비즈니스 로직: 재고 감소 (주문 시 호출)
@@ -94,5 +109,29 @@ public class Item extends BaseEntity {
  // 상품 등록/수정 시 카테고리를 넣기 위한 메서드
     public void setCategory(Category category) {
         this.category = category;
+    }
+    
+    /**
+     * [추가] 리뷰 등록 시 호출: 평점 평균 재계산 및 카운트 증가
+     * 공식: ((기존평균 * 기존개수) + 새점수) / (기존개수 + 1)
+     */
+    public void addReviewRating(int rating) {
+        double totalRating = this.averageRating * this.reviewCount;
+        this.reviewCount++;
+        this.averageRating = (totalRating + rating) / this.reviewCount;
+    }
+
+    /**
+     *  리뷰 삭제 시 호출: 평점 재계산 
+     */
+    public void removeReviewRating(int rating) {
+        if (this.reviewCount <= 1) {
+            this.reviewCount = 0;
+            this.averageRating = 0.0;
+        } else {
+            double totalRating = this.averageRating * this.reviewCount;
+            this.reviewCount--;
+            this.averageRating = (totalRating - rating) / this.reviewCount;
+        }
     }
 }

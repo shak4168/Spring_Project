@@ -20,29 +20,7 @@ public class ItemDetailResponseDTO {
     private Integer price;
     private Integer stockNumber; // 엔티티의 stockQuantity와 매핑
     private String imageUrl;      //  상품 이미지 경로
-    private List<ReviewDTO> reviews; // 상품에 달린 리뷰들
-
-    @Getter
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class ReviewDTO {
-        private Long reviewId;
-        private String content;
-        private String writerName;
-        private int rating;
-        private LocalDateTime regDate;
-        private List<ReplyDTO> replies; // 리뷰에 달린 답글들
-    }
-
-    @Getter
-    @Builder
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class ReplyDTO {
-        private Long replyId;
-        private String content;
-        private String writerName;
-        private LocalDateTime regDate;
-    }
+    
+    private Double averageRating; // 평균 별점 (예: 4.5)
+    private Long reviewCount;     // 리뷰 총 개수 (예: 120개)
 }

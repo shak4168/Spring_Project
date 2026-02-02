@@ -64,7 +64,7 @@
             .then(categories => {
                 const selectBox = document.getElementById('categoryId');
                 
-             // [수정된 코드] 자식 카테고리만 보여주거나, "부모 > 자식" 형태로 표시
+             // 자식 카테고리만 보여주거나, "부모 > 자식" 형태로 표시
                 categories.forEach(category => {
                     // 1. 보여줄 텍스트 결정
                     let displayName = category.name;

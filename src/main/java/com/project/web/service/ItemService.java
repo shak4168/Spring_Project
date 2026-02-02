@@ -92,25 +92,9 @@ public class ItemService {
                 .description(item.getDescription())
                 .price(item.getPrice())
                 .stockNumber(item.getStockQuantity())
-                .imageUrl(item.getImageUrl()) // 이미지 경로 추가
-                .reviews(item.getReviews().stream()
-                        .map(review -> ItemDetailResponseDTO.ReviewDTO.builder()
-                            .reviewId(review.getId())
-                            .content(review.getContent())
-                            .writerName(review.getMember().getName()) // Member 엔티티에 getName()이 있는지 꼭 확인
-                            .rating(review.getRating())
-                            .regDate(review.getCreatedAt())
-                            .replies(review.getReplies().stream()
-                                .map(reply -> ItemDetailResponseDTO.ReplyDTO.builder()
-                                    .replyId(reply.getId())
-                                    .content(reply.getContent())
-                                    .writerName(reply.getMember().getName())
-                                    .regDate(reply.getCreatedAt())
-                                    .build())
-                                .collect(Collectors.toList()))
-                            .build())
-                        .collect(Collectors.toList()))
-                    .build();
+                .imageUrl(item.getImageUrl())
+                .reviewCount((long) item.getReviews().size()) 
+                .build();
     }
     
     public List<Item> findAllItems() {

@@ -30,10 +30,9 @@ public abstract class BaseEntity {
 
     // 삭제 여부
     @Column(nullable = false)
-    private String delYn = "N"; // ← 여기서 초기화해도 @Builder 쓰면 무시될 수 있음!
+    private String delYn = "N"; // ← 여기서 초기화해도 @Builder 쓰면 무시될 수 있음
 
-    // ▼▼▼ [필수 추가] 이 부분이 핵심입니다! ▼▼▼
-    // DB에 저장되기 직전(PrePersist)에 실행되어 값을 강제로 채워줍니다.
+    // DB에 저장되기 직전(PrePersist)에 실행되어 값을 강제로 채워줌
     @PrePersist
     public void onPrePersist() {
         // 1. 생성시간이 비어있으면 현재 시간 주입 (Auditing이 실패해도 이게 막아줌)

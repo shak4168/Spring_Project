@@ -37,36 +37,42 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            // CSRF 해제
+     // CSRF 해제
         .csrf(csrf -> csrf.disable())
+        // JWT는 세션을 안 쓰므로 STATELESS 설정
         .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        
         .authorizeHttpRequests(auth -> auth
-        		// 내부적으로 페이지를 이동(Forward)하거나 에러 페이지로 가는 건 막지 않음
-        		.dispatcherTypeMatchers(jakarta.servlet.DispatcherType.FORWARD, jakarta.servlet.DispatcherType.ERROR).permitAll()
-        	    // 1. 화면(HTML)과 정적 리소스는 다 열어둠 (껍데기는 공개)
-        	    .requestMatchers("/", "/*.html", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/error").permitAll()
-        	    
-        	    // 2. 회원가입, 로그인 API는 열어둔다.
-        	    .requestMatchers("/api/members/**").permitAll()
-
-        	    // 3. 상품 목록/상세 조회 API는 열어둠. (GET 방식만)
-        	    .requestMatchers(HttpMethod.GET, "/api/items/**").permitAll()
-
-        	    // 4. 나머지는 다 잠금 (장바구니, 주문, 상품등록 등)
-        	    // /api/cart, /api/orders 등은 여기에 걸려서 자동으로 보호됩니다.
-        	    .anyRequest().authenticated()
-        	)
+            // 내부 페이지 이동 허용
+            .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.FORWARD, jakarta.servlet.DispatcherType.ERROR).permitAll()
             
-            // 4. JWT 인증 필터를 UsernamePasswordAuthenticationFilter 앞에 추가
-            // 이 줄이 없으면 로그인을 해도 토큰 검사를 안 해서 403
+            // 1. 화면(HTML)과 정적 리소스는 다 열어둠
+            .requestMatchers("/", "/*.html", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/error").permitAll()
             
-            .exceptionHandling(exception -> exception
-                    .authenticationEntryPoint(unauthorizedHandler()) // 401: 인증 안됨
-                    .accessDeniedHandler(accessDeniedHandler())     // 403: 권한 없음
-                )
-            .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+            // 2. 회원가입, 로그인 API 허용
+            .requestMatchers("/api/members/**").permitAll()
 
-        return http.build();
+            // 3. 상품 목록/상세 조회 API 허용 (GET)
+            .requestMatchers(HttpMethod.GET, "/api/items/**").permitAll()
+
+            // 4. 리뷰 목록 조회 API 허용 (GET)
+            // 로그인 안 한 사람도 상세 페이지에서 리뷰를 볼 수 있음
+            // 단, 리뷰 작성(POST)은 여전히 로그인해야 가능 (아래 anyRequest에 걸림)
+            .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()
+
+            // 5. 나머지는 다 잠금 (장바구니, 주문, 리뷰 작성 등)
+            .anyRequest().authenticated()
+        )
+        
+        // 예외 처리 (401, 403)
+        .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(unauthorizedHandler()) 
+                .accessDeniedHandler(accessDeniedHandler())     
+        )
+        // JWT 필터 추가
+        .addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+
+    return http.build();
     }
  // 401 Unauthorized 처리 (인증 실패)
     private AuthenticationEntryPoint unauthorizedHandler() {
