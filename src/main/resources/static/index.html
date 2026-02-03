@@ -13,19 +13,66 @@
             background-size: cover;
             background-position: center;
             color: white;
-            padding: 100px 0;
+            padding: 80px 0;
             margin-bottom: 30px;
         }
+
+        /* ★ 가로 스크롤 핵심 CSS ★ */
+        .scrolling-wrapper {
+            display: flex;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* 모바일 부드러운 스크롤 */
+            scroll-behavior: smooth;
+            padding-bottom: 10px; /* 스크롤바 공간 확보 */
+            gap: 15px; /* 카드 사이 간격 */
+        }
+
+        /* 스크롤바 숨기기 (선택사항 - 깔끔하게 보이려면 적용) */
+        .scrolling-wrapper::-webkit-scrollbar {
+            height: 8px;
+        }
+        .scrolling-wrapper::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+        .scrolling-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .card-block {
+            flex: 0 0 auto; /* 카드 크기 고정 (줄어들지 않음) */
+            width: 250px;   /* 카드 너비 설정 */
+        }
+
         .card-img-top {
-            height: 200px;
+            height: 180px;
             object-fit: cover;
         }
+        
         .product-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+            transition: all 0.2s;
         }
-        /* 페이지네이션 버튼 커서 설정 */
-        .page-link { cursor: pointer; }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            margin-top: 40px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .view-all-btn {
+            font-size: 0.9rem;
+            text-decoration: none;
+            color: #666;
+            cursor: pointer;
+        }
+        .view-all-btn:hover { color: #000; }
     </style>
 </head>
 <body>
@@ -33,56 +80,45 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
         <div class="container">
             <a class="navbar-brand fw-bold" href="/"><i class="bi bi-shop"></i> Cloud Shop</a>
+            
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
-                <ul class="navbar-nav align-items-center gap-2">
-                    
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
-                            카테고리
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" onclick="selectCategory(null)">전체 상품</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" onclick="selectCategory(1)">👗 패션/의류</a></li>
-                            <li><a class="dropdown-item" onclick="selectCategory(2)">💻 가전/디지털</a></li>
-                            <li><a class="dropdown-item" onclick="selectCategory(3)">🍎 식품</a></li>
-                            <li><a class="dropdown-item" onclick="selectCategory(4)">📚 도서/문구</a></li>
-                            <li><a class="dropdown-item" onclick="selectCategory(5)">⚽ 스포츠/레저</a></li>
-                        </ul>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <span class="nav-link text-white-50">포트폴리오용 쇼핑몰</span>
                     </li>
+                </ul>
 
+                <ul class="navbar-nav ms-auto align-items-center gap-2">
                     <li class="nav-item d-none" id="nav-item-add">
-                        <a class="nav-link fw-bold text-warning" href="/item-add.html"> <i class="bi bi-plus-lg"></i> 상품 등록</a>
-                    </li>
-
-                    <li class="nav-item" id="nav-login">
-                        <a class="nav-link" href="/login.html">로그인</a>
-                    </li>
-                    <li class="nav-item" id="nav-join">
-                        <a class="nav-link btn btn-primary text-white px-3" href="/join.html">회원가입</a>
-                    </li>
-
-                    <li class="nav-item d-none" id="nav-welcome">
-                        <span class="nav-link text-white" id="welcome-message"></span>
-                    </li>
-                    
-                    <li class="nav-item d-none" id="nav-cart">
-                        <a class="nav-link text-white" href="/cart.html" title="장바구니">
-                            <i class="bi bi-cart4 fs-5"></i>
+                        <a class="nav-link btn btn-outline-warning text-warning btn-sm px-3" href="/item-add.html">
+                            <i class="bi bi-plus-lg"></i> 상품 등록
                         </a>
                     </li>
-
+                    <li class="nav-item d-none" id="nav-cart">
+                        <a class="nav-link text-white" href="/cart.html">
+                            <i class="bi bi-cart4 fs-5"></i> <span>장바구니</span>
+                        </a>
+                    </li>
                     <li class="nav-item d-none" id="nav-mypage">
                         <a class="nav-link text-white" href="/mypage.html">
                             <i class="bi bi-person-circle"></i> 마이페이지
                         </a>
                     </li>
-
+                    <li class="nav-item" id="nav-login">
+                        <a class="nav-link" href="/login.html">로그인</a>
+                    </li>
+                    <li class="nav-item" id="nav-join">
+                        <a class="nav-link btn btn-primary text-white btn-sm px-3" href="/join.html">회원가입</a>
+                    </li>
+                    <li class="nav-item d-none" id="nav-welcome">
+                        <span class="nav-link text-white small" id="welcome-message"></span>
+                    </li>
                     <li class="nav-item d-none" id="nav-logout">
-                        <a class="nav-link text-danger" href="#" onclick="logout()">로그아웃</a>
+                        <a class="nav-link text-danger small" href="#" onclick="logout()">로그아웃</a>
                     </li>
                 </ul>
             </div>
@@ -91,40 +127,112 @@
 
     <div class="hero-section text-center">
         <div class="container">
-            <h1 class="display-4 fw-bold">Spring Boot & Cloud Shop</h1>
-            <p class="lead">백엔드 API부터 인프라 배포까지 직접 구축한 포트폴리오입니다.</p>
-            <a href="#item-container" class="btn btn-lg btn-warning mt-3">상품 보러가기</a>
+            <h1 class="display-5 fw-bold">Cloud Native Shop</h1>
+            <p class="lead">Spring Boot & AWS MSA Portfolio</p>
         </div>
     </div>
 
-    <div class="container mb-5" id="item-container">
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-2">
-            <h3 class="fw-bold" id="category-title">🛍️ 전체 상품 목록</h3>
+    <div class="container mb-5">
+        
+        <div class="section-header">
+            <h4 class="fw-bold">🔥 신상품 (전체)</h4>
+            <a onclick="alert('전체보기 페이지 구현 예정')" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div id="list-all" class="scrolling-wrapper">
+            <div class="text-center w-100 py-4"><div class="spinner-border text-secondary"></div></div>
         </div>
 
-        <div class="row g-4" id="item-list">
-            <div class="col-12 text-center py-5">
-                <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2 text-muted">상품을 불러오는 중입니다...</p>
-            </div>
+        <div class="section-header">
+            <h4 class="fw-bold">👗 패션/의류</h4>
+            <a onclick="alert('패션 전체보기')" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div id="list-cat-1" class="scrolling-wrapper">
+            <div class="text-center w-100 py-4"><div class="spinner-border text-secondary"></div></div>
         </div>
 
-        <nav aria-label="Page navigation" class="mt-5">
-            <ul class="pagination justify-content-center" id="pagination-area">
-                </ul>
-        </nav>
+        <div class="section-header">
+            <h4 class="fw-bold">💻 가전/디지털</h4>
+            <a onclick="alert('가전 전체보기')" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div id="list-cat-2" class="scrolling-wrapper">
+            <div class="text-center w-100 py-4"><div class="spinner-border text-secondary"></div></div>
+        </div>
+
+        <div class="section-header">
+            <h4 class="fw-bold">🍎 신선 식품</h4>
+            <a onclick="alert('식품 전체보기')" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div id="list-cat-3" class="scrolling-wrapper">
+            <div class="text-center w-100 py-4"><div class="spinner-border text-secondary"></div></div>
+        </div>
+
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    
-    // [상태 관리] 현재 선택된 카테고리와 페이지 번호를 저장
-    let currentCategoryId = null; 
-    let currentPage = 0;
+    // 초기 실행
+    document.addEventListener("DOMContentLoaded", () => {
+        checkLoginStatus();
+        
+        // 각 섹션별 데이터 로드 (병렬 처리)
+        loadItemsBySection(null, 'list-all');   // 전체 상품
+        loadItemsBySection(1, 'list-cat-1');    // 패션
+        loadItemsBySection(2, 'list-cat-2');    // 가전
+        loadItemsBySection(3, 'list-cat-3');    // 식품
+    });
 
-    // 1. UI 업데이트 함수 (로그인/비로그인 처리)
-    function updateUI(isLoggedIn) {
-        if (isLoggedIn) {
+    // [핵심] 섹션별 상품 로드 함수 (재사용 가능)
+    function loadItemsBySection(categoryId, elementId) {
+        // URL 생성: 카테고리가 있으면 categoryId 파라미터 추가, 없으면 전체
+        // size=10으로 설정하여 가로 스크롤에 적당한 개수만 가져옴
+        let url = `/api/items?page=0&size=10`; 
+        if (categoryId) {
+            url += `&categoryId=${categoryId}`;
+        }
+
+        fetch(url)
+            .then(res => {
+                if(!res.ok) throw new Error('Load Failed');
+                return res.json();
+            })
+            .then(data => {
+                const container = document.getElementById(elementId);
+                container.innerHTML = ""; // 로딩 스피너 제거
+
+                const items = data.content;
+
+                if (items.length === 0) {
+                    container.innerHTML = '<div class="text-muted py-4 ps-2">등록된 상품이 없습니다.</div>';
+                    return;
+                }
+
+                items.forEach(item => {
+                    const imgUrl = item.imageUrl ? `/images/${item.imageUrl}` : 'https://dummyimage.com/600x400/dee2e6/6c757d.jpg';
+                    const detailUrl = `/item-detail.html?id=${item.id}`; 
+
+                    // 카드 HTML 생성 (가로 스크롤용 클래스 card-block 적용)
+                    const html = `
+                        <div class="card card-block border-0 shadow-sm product-card" onclick="location.href='${detailUrl}'" style="cursor: pointer;">
+                            <img src="${imgUrl}" class="card-img-top rounded" alt="${item.name}">
+                            <div class="card-body p-3">
+                                <h6 class="card-title fw-bold text-truncate">${item.name}</h6>
+                                <p class="card-text text-danger fw-bold mb-1">${item.price.toLocaleString()}원</p>
+                            </div>
+                        </div>
+                    `;
+                    container.insertAdjacentHTML('beforeend', html);
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById(elementId).innerHTML = '<div class="text-danger p-3">불러오기 실패</div>';
+            });
+    }
+
+    // [UI] 로그인 상태 체크
+    function checkLoginStatus() {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
             document.getElementById('nav-login').classList.add('d-none');
             document.getElementById('nav-join').classList.add('d-none');
             
@@ -134,156 +242,22 @@
             document.getElementById('nav-logout').classList.remove('d-none');
             
             const userName = localStorage.getItem('userName');
-            if (userName) {
-                document.getElementById('welcome-message').innerText = `반갑습니다, ${userName}님`;
-            }
+            if (userName) document.getElementById('welcome-message').innerText = `${userName}님`;
 
             const role = localStorage.getItem('role'); 
-            if (role === 'SELLER' || role === 'ADMIN') {
+            if (role === 'SELLER' || role === 'ROLE_SELLER' || role === 'ADMIN' || role === 'ROLE_ADMIN') {
                 document.getElementById('nav-item-add').classList.remove('d-none');
             }
         }
     }
 
-    // 2. 로그아웃 함수
+    // [기능] 로그아웃
     function logout() {
         if(confirm("로그아웃 하시겠습니까?")) {
             localStorage.clear();
-            alert("로그아웃 되었습니다.");
             window.location.href = '/';
         }
     }
-
-    // 3. 카테고리 선택 시 호출되는 함수
-    function selectCategory(categoryId) {
-        currentCategoryId = categoryId;
-        currentPage = 0; // 카테고리가 바뀌면 1페이지(0)부터 다시 시작
-        
-        // 제목 변경
-        const titleMap = {
-            1: '👗 패션/의류', 2: '💻 가전/디지털', 3: '🍎 식품', 
-            4: '📚 도서/문구', 5: '⚽ 스포츠/레저'
-        };
-        const title = categoryId ? titleMap[categoryId] : '🛍️ 전체 상품 목록';
-        document.getElementById('category-title').innerText = title;
-
-        loadItems(0); // 데이터 새로 로드
-    }
-
-    // 4. 상품 목록 로드 (페이징 + 카테고리 적용)
-    function loadItems(page) {
-        currentPage = page; // 현재 페이지 상태 업데이트
-
-        // [변경] URL에 page와 categoryId 파라미터 추가
-        let url = `/api/items?page=${page}`;
-        if (currentCategoryId) {
-            url += `&categoryId=${currentCategoryId}`;
-        }
-
-        fetch(url)
-            .then(response => {
-                if (!response.ok) throw new Error("상품 로딩 실패");
-                return response.json();
-            })
-            .then(data => {
-                const itemList = document.getElementById('item-list');
-                itemList.innerHTML = ""; 
-
-                // [중요] 백엔드에서 Page 객체 반환 -> content가 진짜 데이터
-                const items = data.content; 
-                const totalPages = data.totalPages;
-
-                if (items.length === 0) {
-                    itemList.innerHTML = '<div class="col-12 text-center py-5 text-muted"><h5>등록된 상품이 없습니다.</h5></div>';
-                    document.getElementById('pagination-area').innerHTML = ''; // 페이징 버튼 삭제
-                    return;
-                }
-
-                items.forEach(item => {
-                    const imageUrl = item.imageUrl ? `/images/${item.imageUrl}` : 'https://dummyimage.com/600x400/dee2e6/6c757d.jpg';
-                    const detailUrl = `/item-detail.html?id=${item.id}`; 
-
-                    const cardHtml = `
-                        <div class="col-md-3 col-6">
-                            <div class="card h-100 border-0 shadow-sm product-card" 
-                                 style="cursor: pointer; transition: all 0.2s;" 
-                                 onclick="location.href='${detailUrl}'">
-                                
-                                <img src="${imageUrl}" class="card-img-top" alt="${item.name}">
-                                <div class="card-body">
-                                    <h5 class="card-title fw-bold text-dark text-truncate">${item.name}</h5>
-                                    <p class="card-text text-danger fw-bold fs-5">${item.price.toLocaleString()}원</p>
-                                    <p class="card-text text-muted small text-truncate">${item.description || ''}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    itemList.insertAdjacentHTML('beforeend', cardHtml);
-                });
-
-                //  하단 페이지네이션 버튼 그리기
-                renderPagination(data);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('item-list').innerHTML = '<div class="col-12 text-center py-5 text-danger">데이터를 불러오는 중 오류가 발생했습니다.</div>';
-            });
-    }
-
-    // 5. 페이지네이션 버튼 렌더링 (5개씩 끊어서 보여주기)
-    function renderPagination(pageData) {
-        const paginationArea = document.getElementById('pagination-area');
-        paginationArea.innerHTML = '';
-
-        const totalPages = pageData.totalPages;
-        const currPage = pageData.number;
-        const blockLimit = 5;
-
-        if (totalPages <= 1) return; // 1페이지뿐이면 버튼 숨김
-
-        const startPage = Math.floor(currPage / blockLimit) * blockLimit;
-        const endPage = Math.min(startPage + blockLimit, totalPages);
-
-        // 이전 버튼
-        const prevDisabled = (startPage === 0) ? 'disabled' : '';
-        const prevPage = Math.max(0, startPage - 1);
-        
-        let prevBtn = `
-            <li class="page-item ${prevDisabled}">
-                <a class="page-link" onclick="loadItems(${prevPage})">이전</a>
-            </li>`;
-        paginationArea.insertAdjacentHTML('beforeend', prevBtn);
-
-        // 숫자 버튼
-        for (let i = startPage; i < endPage; i++) {
-            let activeClass = (i === currPage) ? 'active' : '';
-            let numBtn = `
-                <li class="page-item ${activeClass}">
-                    <a class="page-link" onclick="loadItems(${i})">${i + 1}</a>
-                </li>`;
-            paginationArea.insertAdjacentHTML('beforeend', numBtn);
-        }
-
-        // 다음 버튼
-        const nextDisabled = (endPage >= totalPages) ? 'disabled' : '';
-        const nextPage = endPage;
-        
-        let nextBtn = `
-            <li class="page-item ${nextDisabled}">
-                <a class="page-link" onclick="loadItems(${nextPage})">다음</a>
-            </li>`;
-        paginationArea.insertAdjacentHTML('beforeend', nextBtn);
-    }
-
-    // 초기 실행
-    document.addEventListener("DOMContentLoaded", () => {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-            updateUI(true);
-        }
-        // 처음 로딩 시 0페이지, 카테고리 없음으로 시작
-        loadItems(0);
-    });
     </script>
 </body>
 </html>

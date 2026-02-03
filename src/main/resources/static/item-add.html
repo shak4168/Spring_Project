@@ -4,13 +4,17 @@
     <meta charset="UTF-8">
     <title>관리자 - 상품 등록</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        body { display: none; } 
+    </style>
 </head>
 <body class="bg-light">
 
 <div class="container mt-5" style="max-width: 600px;">
     <div class="card shadow">
         <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">상품 등록 (관리자용)</h4>
+            <h4 class="mb-0">상품 등록 (판매자 전용)</h4>
         </div>
         <div class="card-body">
             <form id="itemForm">
@@ -33,7 +37,8 @@
                     <label for="categoryId" class="form-label">카테고리</label>
                     <select class="form-select" id="categoryId" name="categoryId" required>
                         <option value="">카테고리를 선택하세요</option>
-                        </select>
+                    </select>
+                    <div class="form-text">하위 카테고리만 선택 가능합니다.</div>
                 </div>
 
                 <div class="mb-3">
@@ -53,67 +58,109 @@
 </div>
 
 <script>
-    // 1. 페이지 로드 시 카테고리 목록 불러오기
+    // 1. 페이지 로드 시 권한 체크 시작
     document.addEventListener("DOMContentLoaded", () => {
-        loadCategories();
+        checkAuthAndLoad();
     });
 
-    function loadCategories() {
-        fetch('/api/categories')
-            .then(res => res.json())
-            .then(categories => {
-                const selectBox = document.getElementById('categoryId');
-                
-             // 자식 카테고리만 보여주거나, "부모 > 자식" 형태로 표시
-                categories.forEach(category => {
-                    // 1. 보여줄 텍스트 결정
-                    let displayName = category.name;
-                    
-                    // 만약 백엔드 DTO에 parentName 같은 정보가 있다면 "패션 > 상의" 처럼 만들기 가능
-                    // 현재는 간단하게 모든 카테고리를 나열
-                    
-                    const option = document.createElement('option');
-                    option.value = category.id;
-                    option.textContent = displayName;
-                    selectBox.appendChild(option);
-                });
-            })
-            .catch(err => console.error("카테고리 로딩 실패:", err));
-    }
+    // 2. 권한 확인 및 화면 표시 함수
+    function checkAuthAndLoad() {
+        const token = localStorage.getItem('accessToken');
+        const role = localStorage.getItem('role');
 
-    // 2. 상품 등록 로직 (기존과 동일)
-    document.getElementById('itemForm').addEventListener('submit', function(event) {
-        event.preventDefault(); 
-
-        const formData = new FormData(this);
-        const token = localStorage.getItem('accessToken'); 
-
+        // (1) 비로그인 차단
         if (!token) {
             alert("로그인이 필요합니다.");
             window.location.href = "/login.html";
             return;
         }
 
+        // (2) 권한 체크 (판매자/관리자가 아니면 메인으로)
+        // 만약 구매자도 등록하게 하려면 이 if문을 주석 처리하세요.
+        if (role !== 'SELLER' && role !== 'ROLE_SELLER' && role !== 'ADMIN' && role !== 'ROLE_ADMIN') {
+            alert("판매자 권한이 필요합니다.");
+            window.location.href = "/";
+            return;
+        }
+
+        // (3) 통과 시 화면 표시 및 카테고리 로드
+        document.body.style.display = 'block';
+        loadCategories(token);
+    }
+
+    // 3. 카테고리 불러오기 (하위 카테고리만 필터링)
+    function loadCategories(token) {
+        fetch('/api/categories', {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("카테고리 조회 실패");
+            return res.json();
+        })
+        .then(categories => {
+            const selectBox = document.getElementById('categoryId');
+            selectBox.innerHTML = '<option value="">카테고리를 선택하세요</option>';
+
+            // 하위 카테고리만 골라내기 (parentId가 있는 것들)
+            // (주의: DTO에 parentId 필드가 있어야 정확히 동작)
+            const subCategories = categories.filter(c => c.parentId !== null);
+
+            if (subCategories.length === 0) {
+                // 만약 필터링 했더니 아무것도 없다면? (초기 데이터 문제일 수 있음)
+                // 비상용으로 전체를 다 보여주거나 메시지 출력
+                const option = document.createElement('option');
+                option.text = "선택 가능한 하위 카테고리가 없습니다.";
+                selectBox.appendChild(option);
+                return;
+            }
+
+            subCategories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category.id;
+                
+                // 화면 표시: "부모이름 > 내이름" (DTO에 parentName이 있다면)
+                // 없다면 그냥 이름만 표시
+                const displayName = category.parentName 
+                                    ? `${category.parentName} > ${category.name}` 
+                                    : category.name;
+                                    
+                option.textContent = displayName;
+                selectBox.appendChild(option);
+            });
+        })
+        .catch(err => {
+            console.error("카테고리 로딩 에러:", err);
+            alert("카테고리 목록을 불러오지 못했습니다.");
+        });
+    }
+
+    // 4. 상품 등록 제출 로직
+    document.getElementById('itemForm').addEventListener('submit', function(event) {
+        event.preventDefault(); 
+
+        const formData = new FormData(this);
+        const token = localStorage.getItem('accessToken'); 
+
         fetch('/api/items', {
             method: 'POST',
-            headers: {
-                'Authorization': 'Bearer ' + token
-            },
+            headers: { 'Authorization': 'Bearer ' + token },
             body: formData 
         })
         .then(response => {
-            if (response.ok) {
-                return response.text();
-            }
+            if (response.ok) return response.text();
             throw new Error('등록 실패');
         })
         .then(data => {
-            alert(data); 
+            alert("상품이 성공적으로 등록되었습니다!"); 
             window.location.href = "/";
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('상품 등록 중 오류가 발생했습니다. ' + error.message);
+            alert('오류 발생: ' + error.message);
         });
     });
 </script>
