@@ -1,5 +1,5 @@
 # 1. 베이스 이미지 설정 (가볍고 안정적인 Java 17 버전 사용)
-FROM openjdk:17-jdk-slim
+FROM amazoncorretto:17
 
 # 2. 작성자 정보 (선택 사항)
 LABEL maintainer="admin@example.com"
