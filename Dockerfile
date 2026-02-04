@@ -13,4 +13,4 @@ COPY ${JAR_FILE} app.jar
 
 # 5. 실행 명령어 설정
 #ENTRYPOINT ["java", "-jar", "/app.jar"]
-ENTRYPOINT ["java", "-Xmx400m", "-Xms400m", "-Xss256k", "-jar", "/app.jar"]
+ENTRYPOINT ["java", "-Xmx256m", "-Xms256m", "-Xss256k", "-jar", "/app.jar"]
