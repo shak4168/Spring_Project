@@ -1,6 +1,13 @@
 server:
   port: 8081
 
+  tomcat:
+      threads:
+        max: 20            # 동시에 일하는 일꾼 수 제한 (메모리 절약)
+        min-spare: 5       # 노는 일꾼 최소 수
+      connection-timeout: 20000 # 20초 동안 응답 없으면 끊기
+      max-connections: 8192 # 대기표는 많이 뽑아줘도 됨
+
 spring:
   mvc:
     welcome-page-handler-mapping-enabled: false
