@@ -10,7 +10,7 @@ services:
       - "8081:8081"      # ✅ 여기도 8081로 변경!
     environment:
       # DB 정보는 본인 환경에 맞게 꼭 수정하세요!
-      SPRING_DATASOURCE_URL: jdbc:mariadb://[DB_IP]:3306/shop
+      SPRING_DATASOURCE_URL: jdbc:mariadb://172.16.0.6:3306/shop
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: admin
 
