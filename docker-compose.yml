@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # 1. 스프링 부트 (Backend)
+  backend:
+    build: .             # 현재 폴더의 Dockerfile을 사용
+    container_name: shop-backend
+    restart: always
+    ports:
+      - "8081:8081"      # ✅ 여기도 8081로 변경!
+    environment:
+      # DB 정보는 본인 환경에 맞게 꼭 수정하세요!
+      SPRING_DATASOURCE_URL: jdbc:mariadb://[DB_IP]:3306/shop
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin
+
+  # 2. Nginx (Web Server)
+  nginx:
+    image: nginx:latest
+    container_name: shop-nginx
+    restart: always
+    ports:
+      - "80:80"          # 사용자는 80포트로 접속 -> 내부에서 8081로 전달됨
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - backend
