@@ -16,7 +16,8 @@
                     <input type="email" id="email" class="form-control py-2" placeholder="이메일 (user@example.com)">
                 </div>
                 <div class="mb-3">
-                    <input type="password" id="password" class="form-control py-2" placeholder="비밀번호">
+                   <input type="password" id="password" class="form-control py-2" placeholder="비밀번호"
+                           onkeyup="if(window.event.keyCode==13){login()}">
                 </div>
                 
                 <button onclick="login()" class="btn btn-success w-100 py-2">로그인</button>
@@ -59,9 +60,9 @@
                     localStorage.setItem('userName', data.name);
                     localStorage.setItem('role', data.role); // 권한 저장 추가
 
-                    // [버그 수정] resData -> data 로 수정했습니다.
                     alert(data.name + "님 환영합니다!"); 
                     
+                 	// 로그인 성공 시 메인으로 이동
                     window.location.href = "/"; 
                 } else {
                     const errorMsg = await response.text(); 
