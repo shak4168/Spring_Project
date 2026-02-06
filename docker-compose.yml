@@ -14,6 +14,12 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://172.16.0.6:3306/shop
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: admin
+      file.dir: /app/images/
+
+    volumes:
+        # 서버폴더 : 컨테이너폴더 연결
+        # 서버의 ./images 폴더를 컨테이너 내부의 /app/images 로 연결합니다.
+        - ./images:/app/images
 
   # 2. Nginx (Web Server)
   nginx:
