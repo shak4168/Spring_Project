@@ -11,14 +11,14 @@ server:
 spring:
   mvc:
     welcome-page-handler-mapping-enabled: false
-  
+
   datasource:
     # MySQL 연결 설정
     url: jdbc:mysql://localhost:3306/shop?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Seoul&allowPublicKeyRetrieval=true
     username: admin
     password: admin
     driver-class-name: com.mysql.cj.jdbc.Driver
-    
+
     # HikariCP 설정
     hikari:
       maximum-pool-size: 10       # [중요] 1GB 서버 생존을 위한 제한
@@ -45,7 +45,7 @@ spring:
     #console:
       #enabled: true
       #path: /h2-console
-  
+
   servlet:
     multipart:
       max-file-size: 20MB

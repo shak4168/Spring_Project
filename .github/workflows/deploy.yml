@@ -44,7 +44,7 @@ jobs:
         tags: ${{ secrets.DOCKER_USERNAME }}/shak-site:latest
 
     # 6. NCP 서버에 접속해서 배포 실행 (SSH)
-    # ★ 여기가 수정되었습니다! (docker-compose 방식)
+    # (docker-compose 방식)
     - name: Deploy to Server
       uses: appleboy/ssh-action@master
       with:
