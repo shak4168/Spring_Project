@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault; // [New] 페이징 처리를 위해 추가
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -16,9 +17,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.project.web.domain.item.Item; // [New] 리포지토리 반환 타입
 import com.project.web.dto.item.ItemDetailResponseDTO;
 import com.project.web.dto.item.ItemFormRequestDTO;
 import com.project.web.dto.item.ItemResponseDTO;
+import com.project.web.repository.ItemRepository; // [New] 검색을 위해 리포지토리 추가
 import com.project.web.service.ItemService;
 
 import lombok.RequiredArgsConstructor;
@@ -31,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 public class ItemController {
 
     private final ItemService itemService;
+    private final ItemRepository itemRepository; // [New] 검색 기능을 위해 주입받음
 
     /**
      * 상품 등록 API
@@ -55,7 +59,6 @@ public class ItemController {
     /**
      * 상품 목록 조회 API (페이징 + 카테고리 적용)
      * [GET] /api/items?page=0&categoryId=1
-     * ★ 기존의 List<ItemResponseDTO>를 반환하던 메서드는 삭제했습니다.
      */
     @GetMapping
     public ResponseEntity<Page<ItemResponseDTO>> getItems(
@@ -65,11 +68,31 @@ public class ItemController {
         // 1. 페이지 설정: 한 페이지에 8개씩, ID 역순(최신순)으로 정렬
         Pageable pageable = PageRequest.of(page, 8, Sort.by("id").descending());
         
-        // 2. 서비스 호출 (Service도 수정되어 있어야 함)
+        // 2. 서비스 호출
         Page<ItemResponseDTO> result = itemService.getMainItemPage(categoryId, pageable);
         
-        // 3. 반환 (프론트엔드 페이징 지원)
+        // 3. 반환
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * [New] 상품 검색 API
+     * 설명: 검색어(keyword)를 받아서 상품명에 포함된 아이템을 찾습니다.
+     * URL: /api/items/search?keyword=나이키&page=0
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<ItemResponseDTO>> searchItems(
+            @RequestParam("keyword") String keyword,
+            @PageableDefault(size = 8, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+        
+        // 1. 리포지토리에서 바로 검색 (아까 만든 인덱스 태움)
+        Page<Item> itemPage = itemRepository.findByNameContaining(keyword, pageable);
+        
+        // 2. Entity(Item) -> DTO(ItemResponseDTO) 변환
+        // (ItemResponseDTO 생성자가 Item을 받도록 되어 있다고 가정)
+        Page<ItemResponseDTO> response = itemPage.map(ItemResponseDTO::new);
+        
+        return ResponseEntity.ok(response);
     }
     
     /*

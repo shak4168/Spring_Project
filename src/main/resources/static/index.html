@@ -129,6 +129,19 @@
         <div class="container">
             <h1 class="display-5 fw-bold">Cloud Native Shop</h1>
             <p class="lead">Spring Boot & AWS MSA Portfolio</p>
+            
+            <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="input-group input-group-lg shadow-sm">
+                    <input type="text" id="searchInput" class="form-control" placeholder="상품을 검색해보세요 (예: 티셔츠)" onkeyup="if(window.event.keyCode==13){searchItem()}">
+                    <button class="btn btn-primary px-4" type="button" onclick="searchItem()">
+                        <i class="bi bi-search"></i> 검색
+                    </button>
+                </div>
+            </div>
+        </div>
+        </div>
+            
         </div>
     </div>
 
@@ -257,6 +270,17 @@
             localStorage.clear();
             window.location.href = '/';
         }
+    }
+    
+ // [기능] 검색 이동 함수
+    function searchItem() {
+        const keyword = document.getElementById('searchInput').value;
+        if (!keyword.trim()) {
+            alert("검색어를 입력해주세요!");
+            return;
+        }
+        // 검색 페이지로 키워드를 들고 이동
+        location.href = `/item-search.html?keyword=${encodeURIComponent(keyword)}`;
     }
     </script>
 </body>
