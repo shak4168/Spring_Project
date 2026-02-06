@@ -41,10 +41,10 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/shopping-mall:latest
-        # 위 태그 형식: 본인ID/리포지토리명:버전
+        tags: ${{ secrets.DOCKER_USERNAME }}/shak-site:latest
 
     # 6. NCP 서버에 접속해서 배포 실행 (SSH)
+    # ★ 여기가 수정되었습니다! (docker-compose 방식)
     - name: Deploy to Server
       uses: appleboy/ssh-action@master
       with:
@@ -53,21 +53,19 @@ jobs:
         password: ${{ secrets.SERVER_PASSWORD }}
         port: 22
         script: |
-          # 1. 도커 허브 로그인 (혹시 모르니)
+          # 1. 프로젝트 폴더로 이동 (폴더명 정확해야 함)
+          cd ~/Spring_Project
+          
+          # 2. 도커 허브 로그인 (혹시 연결 끊겼을까봐)
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
           
-          # 2. 기존 컨테이너 중지 및 삭제 (에러 무시)
-          docker stop my-server || true
-          docker rm my-server || true
+          # 3. 최신 이미지 당겨오기 (Pull)
+          # docker-compose.yml에 적힌 이미지를 가져옵니다.
+          docker-compose pull
           
-          # 3. 기존 이미지 삭제 (용량 확보)
-          docker rmi ${{ secrets.DOCKER_USERNAME }}/shopping-mall:latest || true
+          # 4. 컨테이너 교체 및 재실행 (Up)
+          # 이미지가 변경된 것만 감지해서 갈아끼워줍니다.
+          docker-compose up -d
           
-          # 4. 새 이미지 다운로드
-          docker pull ${{ secrets.DOCKER_USERNAME }}/shopping-mall:latest
-          
-          # 5. 새 컨테이너 실행 (네트워크 host 모드)
-          docker run -d --name my-server --network host ${{ secrets.DOCKER_USERNAME }}/shopping-mall:latest
-          
-          # 6. 미사용 이미지 정리
+          # 5. 미사용 이미지 정리 (용량 확보)
           docker image prune -f

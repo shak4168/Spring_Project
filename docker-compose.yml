@@ -3,7 +3,8 @@ version: '3.8'
 services:
   # 1. 스프링 부트 (Backend)
   backend:
-    build: .             # 현재 폴더의 Dockerfile을 사용
+    #build: .             # 현재 폴더의 Dockerfile을 사용
+    image: shak4168/shak-site:latest
     container_name: shop-backend
     restart: always
     ports:
