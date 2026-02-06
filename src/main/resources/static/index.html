@@ -147,22 +147,34 @@
 
     <div class="container mb-5">
         
-       <div class="section-header">
-    <h4 class="fw-bold">🔥 신상품 (전체)</h4>
-    <a href="/item-search.html" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
-</div>
-<div class="section-header">
-    <h4 class="fw-bold">👗 패션/의류</h4>
-    <a href="/item-search.html?categoryId=1&categoryName=패션/의류" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
-</div>
-<div class="section-header">
-    <h4 class="fw-bold">💻 가전/디지털</h4>
-    <a href="/item-search.html?categoryId=2&categoryName=가전/디지털" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
-</div>
-<div class="section-header">
-    <h4 class="fw-bold">🍎 신선 식품</h4>
-    <a href="/item-search.html?categoryId=3&categoryName=신선 식품" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
-</div>
+        <div class="section-header">
+            <h4 class="fw-bold">🔥 신상품 (전체)</h4>
+            <a href="/item-search.html" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div id="list-all" class="scrolling-wrapper">
+            <div class="text-center w-100 py-4"><div class="spinner-border text-secondary"></div></div>
+        </div>
+
+        <div class="section-header">
+            <h4 class="fw-bold">👗 패션/의류</h4>
+            <a href="/item-search.html?categoryId=1&categoryName=패션/의류" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div id="list-cat-1" class="scrolling-wrapper">
+            <div class="text-center w-100 py-4"><div class="spinner-border text-secondary"></div></div>
+        </div>
+
+        <div class="section-header">
+            <h4 class="fw-bold">💻 가전/디지털</h4>
+            <a href="/item-search.html?categoryId=2&categoryName=가전/디지털" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div id="list-cat-2" class="scrolling-wrapper">
+            <div class="text-center w-100 py-4"><div class="spinner-border text-secondary"></div></div>
+        </div>
+
+        <div class="section-header">
+            <h4 class="fw-bold">🍎 신선 식품</h4>
+            <a href="/item-search.html?categoryId=3&categoryName=신선 식품" class="view-all-btn">전체보기 <i class="bi bi-chevron-right"></i></a>
+        </div>
         <div id="list-cat-3" class="scrolling-wrapper">
             <div class="text-center w-100 py-4"><div class="spinner-border text-secondary"></div></div>
         </div>
@@ -182,13 +194,23 @@
         loadItemsBySection(3, 'list-cat-3');    // 식품
     });
 
-    // [핵심] 섹션별 상품 로드 함수 (재사용 가능)
+ // [핵심] 섹션별 상품 로드 함수 (재사용 가능)
     function loadItemsBySection(categoryId, elementId) {
-        // URL 생성: 카테고리가 있으면 categoryId 파라미터 추가, 없으면 전체
-        // size=10으로 설정하여 가로 스크롤에 적당한 개수만 가져옴
-        let url = `/api/items?page=0&size=10`; 
+        // 1. URL 생성
+        // page=0: 첫 페이지
+        // size=10: 10개만 가져옴
+        // sort=id,desc: ID 기준 내림차순 (최신 등록된 상품이 ID가 높으므로 최신순이 됨)
+        let url = `/api/items?page=0&size=10&sort=id,desc`; 
+        
         if (categoryId) {
             url += `&categoryId=${categoryId}`;
+        }
+
+        const container = document.getElementById(elementId);
+        // 혹시 HTML에 ID가 없으면 에러 나지 않게 방어 코드
+        if (!container) {
+            console.error(`ID가 ${elementId}인 HTML 요소를 찾을 수 없습니다.`);
+            return;
         }
 
         fetch(url)
@@ -197,27 +219,32 @@
                 return res.json();
             })
             .then(data => {
-                const container = document.getElementById(elementId);
                 container.innerHTML = ""; // 로딩 스피너 제거
 
-                const items = data.content;
+                // Page 객체로 오는지 List로 오는지에 따라 처리 (보통 content에 담겨옴)
+                const items = data.content ? data.content : data;
 
+                // [빈 상품 처리] 등록된 게 없으면 메시지 띄우기
                 if (items.length === 0) {
-                    container.innerHTML = '<div class="text-muted py-4 ps-2">등록된 상품이 없습니다.</div>';
+                    container.innerHTML = `
+                        <div class="text-muted py-5 w-100 text-center small">
+                            <i class="bi bi-exclamation-circle d-block mb-2 fs-4"></i>
+                            아직 등록된 상품이 없습니다.
+                        </div>`;
                     return;
                 }
 
                 items.forEach(item => {
                     const imgUrl = item.imageUrl ? `/images/${item.imageUrl}` : 'https://dummyimage.com/600x400/dee2e6/6c757d.jpg';
                     const detailUrl = `/item-detail.html?id=${item.id}`; 
+                    const price = item.price ? item.price.toLocaleString() : 0; // 가격 포맷팅 안전장치
 
-                    // 카드 HTML 생성 (가로 스크롤용 클래스 card-block 적용)
                     const html = `
                         <div class="card card-block border-0 shadow-sm product-card" onclick="location.href='${detailUrl}'" style="cursor: pointer;">
-                            <img src="${imgUrl}" class="card-img-top rounded" alt="${item.name}">
+                            <img src="${imgUrl}" class="card-img-top rounded" alt="${item.name}" onerror="this.src='https://dummyimage.com/600x400/dee2e6/6c757d.jpg?text=No+Image'">
                             <div class="card-body p-3">
                                 <h6 class="card-title fw-bold text-truncate">${item.name}</h6>
-                                <p class="card-text text-danger fw-bold mb-1">${item.price.toLocaleString()}원</p>
+                                <p class="card-text text-danger fw-bold mb-1">${price}원</p>
                             </div>
                         </div>
                     `;
@@ -226,7 +253,7 @@
             })
             .catch(err => {
                 console.error(err);
-                document.getElementById(elementId).innerHTML = '<div class="text-danger p-3">불러오기 실패</div>';
+                container.innerHTML = '<div class="text-danger p-3 text-center">상품 정보를 불러오지 못했습니다.</div>';
             });
     }
 
