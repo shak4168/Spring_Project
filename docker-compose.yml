@@ -11,9 +11,11 @@ services:
       - "8081:8081"      
     environment:
       # DB 정보는 본인 환경에 맞게 수정
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       SPRING_DATASOURCE_URL: jdbc:mysql://172.16.0.6:3306/shop
-      SPRING_DATASOURCE_USERNAME: admin
-      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       file.dir: /app/images/
 
     volumes:
