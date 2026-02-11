@@ -53,4 +53,20 @@ public abstract class BaseEntity {
     public void onPreUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
+    
+
+ // 자식 클래스들이 상태를 변경할 수 있도록 메서드 제공
+    public void changeDelYn(String delYn) {
+        this.delYn = delYn;
+        
+        // 상태 변경 시 수정 시간도 같이 갱신해주는 센스!
+        this.updatedAt = LocalDateTime.now();
+        
+        // 만약 다시 'N'으로 살리는 경우, 삭제 시간은 null로 초기화해주면 더 완벽함
+        if ("N".equals(delYn)) {
+            this.deletedAt = null;
+        } else if ("Y".equals(delYn)) {
+            this.deletedAt = LocalDateTime.now();
+        }
+    }
 }

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Cloud Native Shop - 통합 관리자</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .cursor-pointer { cursor: pointer; }
+        .table-hover tbody tr:hover { background-color: #f8f9fa; }
+        .nav-link { cursor: pointer; }
+        .badge { font-weight: 500; letter-spacing: 0.5px; }
+    </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="/">
+            <i class="bi bi-cloud-check me-2"></i>Cloud Shop Admin
+        </a>
+        <div>
+            <a href="/" class="btn btn-outline-light btn-sm me-2">🏠 쇼핑몰 메인</a>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">로그아웃</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-2">
+            <div class="list-group shadow-sm">
+                <a class="list-group-item list-group-item-action active" id="menu-seller" onclick="switchTab('seller')">
+                    📢 판매자 신청 관리
+                </a>
+                <a class="list-group-item list-group-item-action" id="menu-member" onclick="switchTab('member')">
+                    👥 회원 관리
+                </a>
+               <a class="list-group-item list-group-item-action cursor-pointer" id="menu-item" onclick="switchTab('item')">
+                    📦 상품 관리
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-10">
+            
+            <div id="section-seller">
+                <h3 class="mb-4 border-bottom pb-2">📢 판매자 권한 신청 목록</h3>
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <table class="table align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>신청자(Email)</th>
+                                    <th>신청 일시</th>
+                                    <th>상태</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sellerTableBody">
+                                <tr><td colspan="5" class="text-center text-muted py-5">로딩중...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="section-member" class="d-none">
+                <h3 class="mb-4 border-bottom pb-2">👥 회원 관리</h3>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" id="memberSearchInput" class="form-control" placeholder="이름 또는 이메일 검색" onkeyup="if(window.event.keyCode==13){loadMembers(0)}">
+                            <button class="btn btn-primary" onclick="loadMembers(0)">검색</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>이메일</th>
+                                    <th>이름</th>
+                                    <th>권한</th>
+                                    <th>상태</th>
+                                    <th>가입일</th>
+                                    <th>상세</th>
+                                </tr>
+                            </thead>
+                            <tbody id="memberTableBody">
+                                <tr><td colspan="7" class="text-center text-muted py-5">데이터를 불러오는 중...</td></tr>
+                            </tbody>
+                        </table>
+                        
+                        <div id="pagination-wrapper" class="d-flex justify-content-center mt-4 d-none">
+                            <button id="btn-prev" class="btn btn-sm btn-outline-secondary me-2" onclick="prevPage()">이전</button>
+                            <span class="align-self-center px-2 fw-bold text-primary" id="page-indicator">1</span>
+                            <button id="btn-next" class="btn btn-sm btn-outline-secondary ms-2" onclick="nextPage()">다음</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="section-item" class="d-none">
+                <h3 class="mb-4 border-bottom pb-2">📦 전체 상품 관리</h3>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                            <input type="text" id="itemSearchInput" class="form-control" placeholder="상품명 검색" onkeyup="if(window.event.keyCode==13){loadItems(0)}">
+                            <button class="btn btn-primary" onclick="loadItems(0)">검색</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <table class="table align-middle table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>상품명</th>
+                                    <th>가격</th>
+                                    <th>재고</th>
+                                    <th>판매자</th>
+                                    <th>상태</th>
+                                    <th>관리</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemTableBody">
+                                <tr><td colspan="7" class="text-center py-5">로딩중...</td></tr>
+                            </tbody>
+                        </table>
+                        
+                        <div id="item-pagination-wrapper" class="d-flex justify-content-center mt-4 d-none">
+                            <button id="btn-item-prev" class="btn btn-sm btn-outline-secondary me-2" onclick="prevItemPage()">이전</button>
+                            <span class="align-self-center px-2 fw-bold text-primary" id="item-page-indicator">1</span>
+                            <button id="btn-item-next" class="btn btn-sm btn-outline-secondary ms-2" onclick="nextItemPage()">다음</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="memberDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title fw-bold">회원 상세 정보</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-4">
+                    <div class="col-md-6 border-end">
+                        <h6 class="text-primary fw-bold mb-3"><i class="bi bi-person-lines-fill"></i> 기본 정보</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr><th class="text-muted w-25">이름</th><td id="modal-name" class="fw-bold"></td></tr>
+                            <tr><th class="text-muted">이메일</th><td id="modal-email"></td></tr>
+                            <tr><th class="text-muted">전화번호</th><td id="modal-phone"></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6 ps-4">
+                        <h6 class="text-primary fw-bold mb-3"><i class="bi bi-shield-lock"></i> 계정 상태</h6>
+                        <table class="table table-sm table-borderless">
+                           <tr>
+                                <th class="text-muted w-25">권한</th>
+                                <td>
+                                    <select id="modal-role" class="form-select form-select-sm">
+                                        <option value="USER">USER (일반)</option>
+                                        <option value="SELLER">SELLER (판매자)</option>
+                                        <option value="ADMIN">ADMIN (관리자)</option>
+                                        <option value="BAN" class="text-danger fw-bold">BAN (활동 정지)</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">상태</th>
+                                <td>
+                                    <select id="modal-delYn" class="form-select form-select-sm">
+                                        <option value="N">정상 (활동중)</option>
+                                        <option value="Y">정지/탈퇴</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr><th class="text-muted">주소</th><td id="modal-address"></td></tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <hr>
+
+                <h6 class="text-success fw-bold mb-3">🛍️ 최근 주문 내역</h6>
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-bordered table-sm table-hover text-center">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>주문일</th>
+                                <th>상태</th>
+                                <th>대표 상품명</th>
+                                <th>총 결제금액</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-order-list">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                <button type="button" class="btn btn-primary" onclick="saveMemberChanges()">수정 저장</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // ==========================================
+    // 1. 전역 변수 (상태 관리용)
+    // ==========================================
+    let currentMemberPage = 0;
+    let isLastMemberPage = false; 
+
+    let currentItemPage = 0;
+    let isLastItemPage = false;   
+
+    let currentMemberId = null; // 모달에서 수정할 회원 ID
+
+    // ==========================================
+    // 2. 초기 실행 및 탭 전환
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', () => {
+        if(checkAdminRole()) {
+            loadSellerRequests(); // 초기 로딩 시 기본 탭 활성화
+        }
+    });
+
+    function switchTab(tabName) {
+        // 메뉴 스타일 활성화
+        document.querySelectorAll('.list-group-item').forEach(el => el.classList.remove('active'));
+        document.getElementById('menu-' + tabName).classList.add('active');
+
+        // 섹션 보이기/숨기기
+        ['seller', 'member', 'item'].forEach(section => {
+            document.getElementById('section-' + section).classList.add('d-none');
+        });
+        document.getElementById('section-' + tabName).classList.remove('d-none');
+        
+        // [UX 개선] 탭 전환 시 검색창 초기화
+        document.getElementById('memberSearchInput').value = '';
+        document.getElementById('itemSearchInput').value = '';
+
+        // 탭별 데이터 새로고침 (첫 페이지부터)
+        if (tabName === 'seller') loadSellerRequests();
+        if (tabName === 'member') loadMembers(0);
+        if (tabName === 'item') loadItems(0);
+    }
+
+    // ==========================================
+    // [기능 1] 판매자 신청 관리
+    // ==========================================
+    async function loadSellerRequests() {
+        const token = localStorage.getItem('accessToken');
+        try {
+            const res = await fetch('/api/admin/seller-requests', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            const data = await res.json();
+            
+            const tbody = document.getElementById('sellerTableBody');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">대기 중인 신청이 없습니다.</td></tr>';
+                return;
+            }
+
+            data.forEach(req => {
+                const html = `
+                    <tr>
+                        <td>${req.id}</td>
+                        <td>${req.email} <br><small class="text-muted">${req.username}</small></td>
+                        <td>${new Date(req.requestedAt).toLocaleString()}</td>
+                        <td><span class="badge bg-warning text-dark">${req.status}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-success" onclick="approveRequest(${req.id})">승인</button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="rejectRequest(${req.id})">반려</button>
+                        </td>
+                    </tr>`;
+                tbody.insertAdjacentHTML('beforeend', html);
+            });
+        } catch(e) { console.error(e); }
+    }
+
+    async function approveRequest(id) {
+        if(!confirm('승인하시겠습니까?')) return;
+        callApi(`/api/admin/seller-requests/${id}/approve`, 'POST', '승인되었습니다.', loadSellerRequests);
+    }
+    
+    async function rejectRequest(id) {
+        if(!confirm('반려하시겠습니까?')) return;
+        callApi(`/api/admin/seller-requests/${id}/reject`, 'POST', '반려되었습니다.', loadSellerRequests);
+    }
+
+    // ==========================================
+    // [기능 2] 회원 관리 (검색 + 페이징 + 모달)
+    // ==========================================
+    async function loadMembers(page) {
+        const token = localStorage.getItem('accessToken');
+        const keyword = document.getElementById('memberSearchInput').value;
+        
+        let url = `/api/admin/members?page=${page}&size=10`;
+        if(keyword) url += `&keyword=${encodeURIComponent(keyword)}`;
+
+        try {
+            const res = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+            
+            // [방어 코드] 서버 에러 체크
+            if (!res.ok) {
+                console.error("서버 응답 오류:", res.status);
+                return; 
+            }
+            
+            const data = await res.json();
+            
+            // 1. 테이블 렌더링
+            renderMemberTable(data.content || []);
+            
+            // 2. 페이지네이션 UI 업데이트
+            const wrapper = document.getElementById('pagination-wrapper');
+            
+            // 페이지가 1개 이하거나 데이터가 없으면 버튼 숨김
+            if (!data.totalPages || data.totalPages <= 1) {
+                wrapper.classList.add('d-none');
+            } else {
+                wrapper.classList.remove('d-none');
+                
+                // 상태 변수 업데이트
+                currentMemberPage = (typeof data.number !== 'undefined') ? data.number : 0;
+                isLastMemberPage = data.last; 
+
+                // UI 업데이트
+                document.getElementById('page-indicator').innerText = currentMemberPage + 1;
+                document.getElementById('btn-prev').disabled = data.first; 
+                document.getElementById('btn-next').disabled = data.last;
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    function renderMemberTable(members) {
+        const tbody = document.getElementById('memberTableBody');
+        tbody.innerHTML = '';
+        
+        if(!members || members.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">검색 결과가 없습니다.</td></tr>';
+            return;
+        }
+
+        members.forEach(m => {
+            let roleBadge = 'bg-secondary';
+            if(m.role === 'ADMIN') roleBadge = 'bg-danger';
+            if(m.role === 'SELLER') roleBadge = 'bg-success';
+            if(m.role === 'USER') roleBadge = 'bg-primary';
+
+            const html = `
+                <tr class="cursor-pointer" onclick="openMemberDetail(${m.id})" title="상세 정보 보기">
+                    <td>${m.id}</td>
+                    <td>${m.email}</td>
+                    <td class="fw-bold">${m.name}</td>
+                    <td><span class="badge ${roleBadge}">${m.role}</span></td>
+                    <td>${m.delYn === 'Y' ? '<span class="badge bg-danger">탈퇴</span>' : '<span class="badge bg-light text-success border">정상</span>'}</td>
+                    <td>${m.createdAt}</td>
+                    <td><button class="btn btn-sm btn-outline-dark">조회</button></td>
+                </tr>`;
+            tbody.insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    function prevPage() { if(currentMemberPage > 0) loadMembers(currentMemberPage - 1); }
+    function nextPage() { if(!isLastMemberPage) loadMembers(currentMemberPage + 1); }
+
+
+    // ==========================================
+    // [기능 3] 상품 관리 (검색 + 페이징 + 삭제)
+    // ==========================================
+    async function loadItems(page) {
+        const token = localStorage.getItem('accessToken');
+        const keyword = document.getElementById('itemSearchInput').value; 
+        
+        let url = `/api/admin/items?page=${page}&size=10`;
+        if(keyword) {
+            url += `&keyword=${encodeURIComponent(keyword)}`;
+        }
+
+        try {
+            const res = await fetch(url, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            // [방어 코드] 서버 에러(500) 발생 시 중단
+            if (!res.ok) {
+                console.error("서버 에러 발생:", res.status);
+                return;
+            }
+
+            const data = await res.json();
+            
+            const tbody = document.getElementById('itemTableBody');
+            tbody.innerHTML = '';
+
+            // 데이터가 없거나 content가 null인 경우 방어
+            const content = data.content || [];
+
+            if (content.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">검색된 상품이 없습니다.</td></tr>';
+                document.getElementById('item-pagination-wrapper').classList.add('d-none');
+                return;
+            }
+
+            // 테이블 그리기
+            content.forEach(item => {
+                const statusBadge = item.sellStatus === 'SELL' ? 'bg-success' : 'bg-secondary';
+                const statusText = item.sellStatus === 'SELL' ? '판매중' : '품절';
+                
+                const html = `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td class="fw-bold text-start ps-4">${item.itemName}</td>
+                        <td>${item.price.toLocaleString()}원</td>
+                        <td>${item.stockNumber}개</td>
+                        <td><small>${item.sellerEmail}</small></td>
+                        <td><span class="badge ${statusBadge}">${statusText}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteItem(${item.id})">삭제</button>
+                        </td>
+                    </tr>`;
+                tbody.insertAdjacentHTML('beforeend', html);
+            });
+            
+            // 페이지네이션 처리
+            const wrapper = document.getElementById('item-pagination-wrapper');
+            
+            // 페이지가 1개 이하거나 없으면 숨김
+            if (!data.totalPages || data.totalPages <= 1) {
+                wrapper.classList.add('d-none');
+            } else {
+                wrapper.classList.remove('d-none');
+                
+                // [안전장치] NaN 방지 (값이 없으면 0으로)
+                currentItemPage = (typeof data.number !== 'undefined') ? data.number : 0;
+                isLastItemPage = data.last; 
+
+                document.getElementById('item-page-indicator').innerText = currentItemPage + 1;
+                document.getElementById('btn-item-prev').disabled = data.first;
+                document.getElementById('btn-item-next').disabled = data.last;
+            }
+
+        } catch(e) { console.error(e); }
+    }
+
+    function prevItemPage() { if(currentItemPage > 0) loadItems(currentItemPage - 1); }
+    function nextItemPage() { if(!isLastItemPage) loadItems(currentItemPage + 1); }
+
+    async function deleteItem(id) {
+        if(!confirm("⚠️ 경고: 정말 이 상품을 삭제하시겠습니까?\n삭제된 상품은 복구할 수 없습니다.")) return;
+        callApi(`/api/admin/items/${id}`, 'DELETE', '상품이 삭제되었습니다.', () => loadItems(currentItemPage));
+    }
+
+    // ==========================================
+    // [공통] 회원 상세 모달 로직
+    // ==========================================
+    async function openMemberDetail(memberId) {
+        currentMemberId = memberId;
+        const token = localStorage.getItem('accessToken');
+        
+        try {
+            const res = await fetch(`/api/admin/members/${memberId}`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            
+            if(!res.ok) throw new Error("정보 조회 실패");
+            const detail = await res.json();
+            
+            document.getElementById('modal-name').innerText = detail.name;
+            document.getElementById('modal-email').innerText = detail.email;
+            document.getElementById('modal-phone').innerText = detail.phone || '-';
+            document.getElementById('modal-address').innerText = detail.address || '-';
+            
+            let roleVal = detail.role;
+            if (roleVal && roleVal.startsWith("ROLE_")) {
+                roleVal = roleVal.replace("ROLE_", "");
+            }
+            document.getElementById('modal-role').value = roleVal;
+            document.getElementById('modal-delYn').value = detail.delYn || "N";
+
+            const orderBody = document.getElementById('modal-order-list');
+            orderBody.innerHTML = '';
+            
+            if (!detail.orders || detail.orders.length === 0) {
+                orderBody.innerHTML = '<tr><td colspan="4" class="text-center py-3 text-muted">주문 내역이 없습니다.</td></tr>';
+            } else {
+                detail.orders.forEach(o => {
+                    let itemName = o.orderItems[0].itemName;
+                    if(o.orderItems.length > 1) itemName += ` 외 ${o.orderItems.length - 1}건`;
+
+                    const html = `
+                        <tr>
+                            <td>${o.orderDate}</td>
+                            <td><span class="badge bg-light text-dark border">${o.orderStatus}</span></td>
+                            <td class="text-start ps-3">${itemName}</td>
+                            <td class="fw-bold text-end pe-3">${o.totalPrice.toLocaleString()}원</td>
+                        </tr>`;
+                    orderBody.insertAdjacentHTML('beforeend', html);
+                });
+            }
+
+            const modalEl = document.getElementById('memberDetailModal');
+            let modal = bootstrap.Modal.getInstance(modalEl);
+            if (!modal) {
+                modal = new bootstrap.Modal(modalEl);
+            }
+            modal.show();
+
+        } catch(e) {
+            console.error(e);
+            alert("회원 정보를 불러오지 못했습니다.");
+        }
+    }
+
+    async function saveMemberChanges() {
+        if(!currentMemberId) return;
+        if(!confirm("회원 정보를 수정하시겠습니까?")) return;
+
+        const token = localStorage.getItem('accessToken');
+        const data = {
+            role: document.getElementById('modal-role').value,
+            delYn: document.getElementById('modal-delYn').value
+        };
+
+        try {
+            const res = await fetch(`/api/admin/members/${currentMemberId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (res.ok) {
+                alert("수정되었습니다.");
+                const modalEl = document.getElementById('memberDetailModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
+                loadMembers(currentMemberPage); 
+            } else {
+                alert("수정 실패");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("서버 오류 발생");
+        }
+    }
+
+    // ==========================================
+    // [공통] API 호출 유틸리티 & 보안
+    // ==========================================
+    async function callApi(url, method, successMsg, callback) {
+        const token = localStorage.getItem('accessToken');
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if(res.ok) {
+                alert(successMsg);
+                if(callback) callback();
+            } else {
+                alert("처리 실패");
+            }
+        } catch(e) { console.error(e); }
+    }
+
+    function checkAdminRole() {
+        const token = localStorage.getItem('accessToken');
+        if(!token) {
+            alert('로그인이 필요합니다.');
+            location.href = '/login.html';
+            return false;
+        }
+        const role = localStorage.getItem('role'); 
+        if(role !== 'ADMIN') {
+            alert('관리자 권한이 없습니다.');
+            location.href = '/';
+            return false;
+        }
+        return true;
+    }
+
+    function logout() {
+        if(!confirm("로그아웃 하시겠습니까?")) return;
+        localStorage.clear();
+        location.href = '/';
+    }
+</script>
+</body>
+</html>

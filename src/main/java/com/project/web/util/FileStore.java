@@ -50,4 +50,24 @@ public class FileStore {
         int pos = originalFilename.lastIndexOf(".");
         return originalFilename.substring(pos + 1);
     }
+    
+ // 파일 삭제 메서드 (상품 수정 시 기존 이미지 삭제용)
+    public void deleteFile(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return;
+        }
+        
+        //  경로 생성
+        File file = new File(fileDir + filename);
+        
+        if (file.exists()) {
+            if (file.delete()) {
+                // 로그: 파일 삭제 성공
+                // log.info("File deleted: {}", filename); 
+            } else {
+                // 로그: 파일 삭제 실패 (권한 문제 등)
+                // log.warn("Failed to delete file: {}", filename);
+            }
+        }
+    }
 }

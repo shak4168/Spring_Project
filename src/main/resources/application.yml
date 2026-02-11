@@ -9,6 +9,17 @@ server:
       max-connections: 8192 # 대기표는 많이 뽑아줘도 됨
 
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+  
   mvc:
     welcome-page-handler-mapping-enabled: false
 

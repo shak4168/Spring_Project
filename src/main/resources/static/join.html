@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>회원가입 - Cloud Shop</title>
+    <title>회원가입 - Cloud Native Shop</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .container { max-width: 600px; margin-top: 50px; }
@@ -19,7 +19,7 @@
                 
                 <div class="mb-3">
                     <label class="form-label">이메일 (아이디로 사용)</label>
-                    <input type="email" id="joinEmail" class="form-control" placeholder="example@email.com">
+                    <input type="email" id="joinEmail" class="form-control" placeholder="user@example.com">
                 </div>
 
                 <div class="mb-3">
@@ -54,24 +54,6 @@
                     <input type="text" id="detailAddress" class="form-control" placeholder="상세 주소">
                 </div>
                 
-                <div class="mb-3">
-                <label class="form-label fw-bold">가입 유형</label>
-                    <div class="card p-3 bg-light border-0">
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="role" id="roleUser" value="USER" checked>
-                            <label class="form-check-label" for="roleUser">
-                                🛒 <strong>구매자</strong> (상품을 구매하고 싶어요)
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="role" id="roleSeller" value="SELLER">
-                            <label class="form-check-label" for="roleSeller">
-                                💼 <strong>판매자</strong> (내 상품을 판매하고 싶어요)
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
                 <button onclick="join()" class="btn btn-primary w-100 py-2 fw-bold">가입하기</button>
             </div>
         </div>
@@ -79,18 +61,14 @@
 
     <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
     <script>
-        // 1. 주소 찾기 함수 (Daum API)
+        // 1. 주소 찾기 함수
         function execDaumPostcode() {
             new daum.Postcode({
                 oncomplete: function(data) {
                     var addr = data.userSelectedType === 'R' ? data.roadAddress : data.jibunAddress;
-                    
                     document.getElementById('zipcode').value = data.zonecode;
                     document.getElementById("address").value = addr;
-                    
-                    // 상세주소 커서 이동 (안전장치 추가)
-                    var detailInput = document.getElementById("detailAddress");
-                    if(detailInput) detailInput.focus();
+                    document.getElementById("detailAddress").focus();
                 }
             }).open();
         }
@@ -103,10 +81,8 @@
             const birthDate = document.getElementById('birthDate').value; 
             const phone = document.getElementById('joinPhone').value;
             
-            // 라디오 버튼 선택값 가져오기
-            const roleRadio = document.querySelector('input[name="role"]:checked');
-            // 기본값 USER
-            const role = roleRadio ? roleRadio.value : 'USER';
+            // [변경됨] UI에서 선택하는 것이 아니라, 코드가 강제로 'USER'로 설정
+            const role = 'USER'; 
 
             // 유효성 검사
             if (!email || !password || !name || !birthDate) {
@@ -114,42 +90,43 @@
                 return;
             }
 
-            // 정규식 \s(소문자:공백) -> \S(대문자:글자) 로 수정
-            if (!/^\S+@\S+\.\S+$/.test(email)) {
+            // 이메일 형식 체크
+            // (admin 계정은 여기서 가입 안 하니까 엄격하게 체크해도 됩니다)
+            const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!emailRegex.test(email)) {
                 alert("올바른 이메일 형식이 아닙니다.");
                 return;
             }
             
-            // 데이터 전송 객체
             const data = {
                 email: email,       
                 password: password,
                 name: name,
                 phone: phone, 
                 birthDate: birthDate, 
-                // document.getElementById (카멜케이스 필수)
                 zipcode: document.getElementById('zipcode').value,
                 address: document.getElementById('address').value,
                 detailAddress: document.getElementById('detailAddress').value,
-                role: role 
+                role: role // 항상 'USER' 전송
             };
 
             try {
                 const response = await fetch('/api/members/join', {
-                    method: 'POST', // 대문자 권장
-                    headers: { 'Content-Type': 'application/json' }, //  대소문자 준수
-                    body: JSON.stringify(data) // JSON 대문자 필수
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
                 });
                 
                 if (response.ok) {
-                    alert("회원가입 성공! 로그인해주세요.");
+                    alert("회원가입이 완료되었습니다!\n로그인 페이지로 이동합니다.");
                     window.location.href = "/login.html";
                 } else {
-                    alert("가입 실패: " + await response.text());
+                    const errorMsg = await response.text();
+                    alert("가입 실패: " + errorMsg);
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert("회원가입 실패: " + error.message);
+                alert("서버 통신 중 오류가 발생했습니다.");
             }
         }
     </script>

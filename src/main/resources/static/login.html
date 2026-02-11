@@ -3,25 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>로그인 - Cloud Shop</title>
+    <title>로그인 - Cloud Native Shop</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .container { max-width: 400px; margin-top: 80px; }
+    </style>
 </head>
-<body class="bg-light d-flex align-items-center py-5" style="min-height: 100vh;">
-    <div class="container" style="max-width: 400px;">
-        <div class="card shadow-sm border-0">
+<body class="bg-light">
+
+    <div class="container">
+        <div class="card shadow border-0">
             <div class="card-body p-5">
                 <h2 class="text-center mb-4 fw-bold">로그인</h2>
                 
-                <div class="mb-3">
-                    <input type="email" id="email" class="form-control py-2" placeholder="이메일 (user@example.com)">
-                </div>
-                <div class="mb-3">
-                   <input type="password" id="password" class="form-control py-2" placeholder="비밀번호"
-                           onkeyup="if(window.event.keyCode==13){login()}">
-                </div>
+                <form onsubmit="return false;">
+                    <div class="mb-3">
+                        <input type="email" id="email" class="form-control py-2" placeholder="이메일 (user@example.com)" required>
+                    </div>
+                    <div class="mb-3">
+                       <input type="password" id="password" class="form-control py-2" placeholder="비밀번호"
+                               onkeyup="if(window.event.keyCode==13){login()}" required>
+                    </div>
+                    
+                    <button type="button" onclick="login()" class="btn btn-success w-100 py-2 fw-bold">로그인</button>
+                </form>
                 
-                <button onclick="login()" class="btn btn-success w-100 py-2">로그인</button>
-                
+                <div class="d-flex align-items-center my-3">
+                    <hr class="flex-grow-1">
+                    <span class="px-2 text-muted small">또는</span>
+                    <hr class="flex-grow-1">
+                </div>
+
+                <a href="/oauth2/authorization/google" class="btn btn-outline-danger w-100 py-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-google mb-1 me-2" viewBox="0 0 16 16">
+                        <path d="M15.545 6.558a9.42 9.42 0 0 1 .139 1.626c0 2.434-.87 4.492-2.384 5.885h.002C11.978 15.292 10.158 16 8 16A8 8 0 1 1 8 0a7.689 7.689 0 0 1 5.352-2.082l-2.284 2.284A4.347 4.347 0 0 0 8 3.166c-2.087 0-3.86 1.408-4.492 3.304a4.792 4.792 0 0 0 0 3.063h.003c.635 1.893 2.405 3.301 4.492 3.301 1.078 0 2.004-.276 2.722-.764h-.003a3.702 3.702 0 0 0 1.599-2.431H8v-3.08h7.545z"/>
+                    </svg>
+                    Google로 시작하기
+                </a>
                 <div class="text-center mt-3">
                     <a href="/join.html" class="text-decoration-none">계정이 없으신가요? 회원가입</a>
                 </div>
@@ -41,7 +59,7 @@
             }
 
             const reqData = {
-                email: emailVal,        // DTO도 email로 받아야 함
+                email: emailVal,
                 password: passwordVal
             };
 
@@ -58,19 +76,31 @@
                     // 토큰 및 정보 저장
                     localStorage.setItem('accessToken', data.token);
                     localStorage.setItem('userName', data.name);
-                    localStorage.setItem('role', data.role); // 권한 저장 추가
+                    localStorage.setItem('role', data.role); // 권한 저장
 
-                    alert(data.name + "님 환영합니다!"); 
-                    
-                 	// 로그인 성공 시 메인으로 이동
-                    window.location.href = "/"; 
+                 // 관리자 권한 확인 및 페이지 이동 분기
+                    if (data.role === 'ADMIN') {
+                        alert("관리자님 환영합니다.\n관리자 페이지로 이동합니다.");
+                        // 주의: 실제 admin.html 파일이 있는 경로를 적어야 합니다.
+                        // static/admin/admin.html 에 있다면 아래와 같습니다.
+                        window.location.href = "/admin.html"; 
+                    } else {
+                        alert(data.name + "님 환영합니다!");
+                        window.location.href = "/"; // 일반 유저는 메인으로
+                    }
                 } else {
                     const errorMsg = await response.text(); 
-                    alert("로그인 실패: " + errorMsg);
+                    // 에러 메시지가 JSON 형태일 수도 있고 text일 수도 있어서 처리
+                    try {
+                         const jsonError = JSON.parse(errorMsg);
+                         alert("로그인 실패: " + (jsonError.message || jsonError.error || "정보를 확인해주세요."));
+                    } catch(e) {
+                         alert("로그인 실패: 아이디 또는 비밀번호를 확인해주세요.");
+                    }
                 }
             } catch (error) {
                 console.error(error);
-                alert("서버 연결 에러");
+                alert("서버 연결 에러가 발생했습니다.");
             }
         }
     </script>

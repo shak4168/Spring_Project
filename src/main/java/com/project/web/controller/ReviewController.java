@@ -23,12 +23,15 @@ import com.project.web.dto.review.ReviewRequestDTO;
 import com.project.web.dto.review.ReviewResponseDTO;
 import com.project.web.service.ReviewService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController // JSON 응답을 위해 사용
 @RequiredArgsConstructor
 @RequestMapping("/api/reviews")
+@Tag(name = "3. 리뷰(Review)", description = "상품별 리뷰 목록 조회 및 구매자 리뷰 작성 기능을 담당합니다.")
 public class ReviewController {
 
     private final ReviewService reviewService;
@@ -37,6 +40,7 @@ public class ReviewController {
      * 리뷰 목록 조회 (페이징)
      * GET /api/reviews/{itemId}?page=0
      */
+    @Operation(summary = "리뷰 목록 조회", description = "해당 상품의 리뷰를 최신순으로 조회합니다.")
     @GetMapping("/{itemId}")
     public ResponseEntity<Page<ReviewResponseDTO>> getReviewList(
             @PathVariable("itemId") Long itemId,
@@ -57,6 +61,7 @@ public class ReviewController {
      * 요청 예시: POST /api/reviews
      * Body: { "itemId": 105, "content": "좋아요", "rating": 5 }
      */
+    @Operation(summary = "리뷰 등록", description = "구매한 상품에 대해 별점과 내용을 작성합니다.")
     @PostMapping
     public ResponseEntity<?> createReview(
             @RequestBody @Valid ReviewRequestDTO reviewRequestDto,

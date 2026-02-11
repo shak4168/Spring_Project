@@ -19,10 +19,13 @@ import com.project.web.dto.order.OrderRequestDTO;
 import com.project.web.repository.MemberRepository;
 import com.project.web.service.OrderService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "4. 주문(Order)", description = "상품 단건 주문 및 사용자별 구매 이력(주문 내역)을 조회합니다.")
 public class OrderController {
 
     private final OrderService orderService;
@@ -32,6 +35,7 @@ public class OrderController {
      * 상품 주문 API
      * [POST] /api/orders
      */
+    @Operation(summary = "상품 주문", description = "상세 페이지에서 바로 상품을 주문합니다.")
     @PostMapping("/api/orders")
     public ResponseEntity<String> order(@RequestBody OrderRequestDTO request, Principal principal) {
         
@@ -55,6 +59,7 @@ public class OrderController {
      * 구매 이력 조회 API
      * [GET] /api/orders  <-- 경로 명시 필요
      */
+    @Operation(summary = "구매 이력 조회", description = "로그인한 사용자의 주문 내역을 페이징하여 조회합니다.")
     @GetMapping("/api/orders")
     public ResponseEntity<Page<OrderHistDTO>> orderHist(
             @RequestParam(value = "page", defaultValue = "0") int page, // 1. URL 파라미터로 페이지 번호를 받음 (기본값 0)

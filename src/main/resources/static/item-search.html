@@ -6,13 +6,16 @@
     <title>상품 목록 - Cloud Shop</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        .card:hover { transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
+        .page-link { cursor: pointer; }
+    </style>
 </head>
-<body>
+<body class="bg-light">
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow-sm">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/"><i class="bi bi-shop"></i> Cloud Shop</a>
-            
+            <a class="navbar-brand fw-bold" href="/"><i class="bi bi-cloud-check"></i> Cloud Shop</a>
             <div class="d-flex ms-auto">
                 <div class="input-group">
                     <input type="text" id="searchInput" class="form-control form-control-sm" 
@@ -23,114 +26,213 @@
         </div>
     </nav>
 
-    <div class="container mt-5">
-        <h2 class="fw-bold mb-4" id="page-title">
+    <div class="container mt-5 mb-5">
+        <h3 class="fw-bold mb-4 border-bottom pb-2" id="page-title">
             상품 목록
-        </h2>
+        </h3>
 
         <div id="search-result-list" class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
             </div>
         
         <div id="no-result" class="text-center py-5 d-none">
-            <i class="bi bi-exclamation-circle fs-1 text-secondary"></i>
+            <i class="bi bi-exclamation-circle display-1 text-secondary opacity-50"></i>
             <p class="mt-3 text-secondary fs-5">등록된 상품이 없습니다.</p>
             <a href="/" class="btn btn-outline-dark mt-2">메인으로 돌아가기</a>
+        </div>
+
+        <div id="pagination-wrapper" class="d-flex justify-content-center mt-5 d-none">
+            <button id="btn-prev" class="btn btn-outline-secondary me-2" onclick="prevPage()">이전</button>
+            <span class="align-self-center px-3 fw-bold text-primary" id="page-indicator">1</span>
+            <button id="btn-next" class="btn btn-outline-secondary ms-2" onclick="nextPage()">다음</button>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
-    <script>
-        // 1. 검색 함수 (엔터키 처리 포함)
-        function searchItem() {
-            const keyword = document.getElementById('searchInput').value;
-            if (!keyword.trim()) {
-                alert("검색어를 입력해주세요!");
-                return;
-            }
-            // 검색 결과 페이지로 이동 (키워드 파라미터 포함)
-            location.href = `/item-search.html?keyword=${encodeURIComponent(keyword)}`;
+   <script>
+    // ==========================================
+    // 전역 변수: 페이지 상태 관리
+    // ==========================================
+    let currentPage = 0;
+    let totalPages = 0; // [추가] 전체 페이지 수를 저장해서 안전장치로 사용
+    
+    // 현재 모드 저장 (search: 검색, category: 카테고리, all: 전체)
+    let currentMode = 'all'; 
+    let currentQuery = ''; 
+
+    // ==========================================
+    // 1. 초기 실행 (URL 파라미터 분석)
+    // ==========================================
+    document.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        const keyword = params.get('keyword');
+        const categoryId = params.get('categoryId');
+        const categoryName = params.get('categoryName');
+
+        if (keyword) {
+            currentMode = 'search';
+            currentQuery = keyword;
+            document.getElementById('searchInput').value = keyword;
+            document.getElementById('page-title').innerHTML = `🔍 "<span class="text-primary">${keyword}</span>" 검색 결과`;
+        } 
+        else if (categoryId) {
+            currentMode = 'category';
+            currentQuery = categoryId;
+            const title = categoryName ? categoryName : "카테고리 상품";
+            document.getElementById('page-title').innerText = `📂 ${title}`;
+        } 
+        else {
+            currentMode = 'all';
+            document.getElementById('page-title').innerText = "🔥 전체 상품 목록";
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            // 2. URL 파라미터 분석 (검색어? 카테고리? 전체?)
-            const params = new URLSearchParams(window.location.search);
-            const keyword = params.get('keyword');
-            const categoryId = params.get('categoryId');
-            const categoryName = params.get('categoryName');
+        // 첫 페이지 로드
+        loadItems(0);
+    });
 
-            // 검색창에 현재 검색어 유지 (사용자 편의성)
-            if (keyword) {
-                document.getElementById('searchInput').value = keyword;
+    // ==========================================
+    // 2. 데이터 로드 (NaN 방지 + 페이지 범위 체크)
+    // ==========================================
+    async function loadItems(page) {
+        // [중요] 한 페이지당 보여줄 개수 (12개가 카드 레이아웃에 최적)
+        const size = 12; 
+        
+        let url = '';
+        if (currentMode === 'search') {
+            url = `/api/items/search?keyword=${encodeURIComponent(currentQuery)}&page=${page}&size=${size}`;
+        } else if (currentMode === 'category') {
+            url = `/api/items?categoryId=${currentQuery}&page=${page}&size=${size}`;
+        } else {
+            url = `/api/items?page=${page}&size=${size}`;
+        }
+
+        try {
+            const res = await fetch(url);
+            if(!res.ok) throw new Error("API Error");
+            const data = await res.json();
+
+            const container = document.getElementById('search-result-list');
+            const noResult = document.getElementById('no-result');
+            const pagination = document.getElementById('pagination-wrapper');
+
+            container.innerHTML = "";
+
+            // 데이터가 아예 없거나 content가 비어있을 때
+            if (!data.content || data.content.length === 0) {
+                noResult.classList.remove('d-none');
+                pagination.classList.add('d-none'); // 버튼 숨김
+                return;
+            } else {
+                noResult.classList.add('d-none');
             }
 
-            // 3. 상황별 API 호출 분기
-            if (keyword) {
-                // [CASE 1] 검색 모드
-                document.getElementById('page-title').innerHTML = `🔍 "<span class="text-primary">${keyword}</span>" 검색 결과`;
-                loadItems(`/api/items/search?keyword=${encodeURIComponent(keyword)}&size=20`);
-            } 
-            else if (categoryId) {
-                // [CASE 2] 카테고리 모드
-                const title = categoryName ? categoryName : "카테고리 상품";
-                document.getElementById('page-title').innerText = `📂 ${title}`;
-                loadItems(`/api/items?categoryId=${categoryId}&page=0&size=20`);
-            } 
-            else {
-                // [CASE 3] 전체 보기 모드
-                document.getElementById('page-title').innerText = "🔥 전체 상품 목록";
-                loadItems(`/api/items?page=0&size=20`);
-            }
-        });
+            // [권한 확인] 관리자면 삭제 버튼 보이기
+            const currentRole = localStorage.getItem('role');
+            
+            data.content.forEach(item => {
+                const imgUrl = item.imageUrl ? `/images/${item.imageUrl}` : 'https://dummyimage.com/600x400/dee2e6/6c757d.jpg';
+                
+                let adminBtn = '';
+                if (currentRole === 'ADMIN') {
+                    adminBtn = `<button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2 shadow-sm" 
+                                onclick="deleteItem(event, ${item.id})" title="관리자 삭제"><i class="bi bi-trash"></i></button>`;
+                }
 
-        // 4. 상품 목록 불러오기 (공통 함수)
-        function loadItems(apiUrl) {
-            fetch(apiUrl)
-                .then(res => {
-                    if(!res.ok) throw new Error("API Load Failed");
-                    return res.json();
-                })
-                .then(data => {
-                    const container = document.getElementById('search-result-list');
-                    container.innerHTML = ""; // 초기화
-                    
-                    const items = data.content; // Page<ItemResponseDTO>의 content
+                // 품절 뱃지
+                let statusBadge = '';
+                if (item.itemSellStatus === 'SOLD_OUT' || item.stockNumber <= 0) {
+                    statusBadge = `<span class="badge bg-secondary position-absolute top-0 start-0 m-2 shadow-sm">품절</span>`;
+                } else {
+                    statusBadge = `<span class="badge bg-primary position-absolute top-0 start-0 m-2 shadow-sm">판매중</span>`;
+                }
 
-                    if (items.length === 0) {
-                        document.getElementById('no-result').classList.remove('d-none');
-                        return;
-                    }
-
-                    // 카드 렌더링
-                    items.forEach(item => {
-                        // 이미지가 없으면 더미 이미지 사용
-                        const imgUrl = item.imageUrl ? `/images/${item.imageUrl}` : 'https://dummyimage.com/600x400/dee2e6/6c757d.jpg';
-                        
-                        const html = `
-                            <div class="col">
-                                <div class="card h-100 shadow-sm border-0" onclick="location.href='/item-detail.html?id=${item.id}'" style="cursor:pointer; transition: transform 0.2s;">
-                                    <img src="${imgUrl}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">
-                                    <div class="card-body">
-                                        <h5 class="card-title fw-bold text-truncate">${item.name}</h5>
-                                        <p class="card-text text-danger fw-bold fs-5">${item.price.toLocaleString()}원</p>
-                                    </div>
+                const html = `
+                    <div class="col">
+                        <div class="card h-100 shadow-sm border-0 position-relative" 
+                             onclick="location.href='/item-detail.html?id=${item.id}'" 
+                             style="cursor:pointer;">
+                            ${adminBtn}
+                            ${statusBadge}
+                            <img src="${imgUrl}" class="card-img-top" alt="${item.name}" style="height: 200px; object-fit: cover;">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title fs-6 fw-bold text-truncate">${item.itemName || item.name}</h5>
+                                <div class="mt-auto">
+                                    <p class="card-text text-danger fw-bold fs-5 mb-0">${item.price.toLocaleString()}원</p>
                                 </div>
                             </div>
-                        `;
-                        container.insertAdjacentHTML('beforeend', html);
-                    });
-                    
-                    // (옵션) 카드 호버 효과 추가
-                    document.querySelectorAll('.card').forEach(card => {
-                        card.addEventListener('mouseenter', () => card.style.transform = 'scale(1.03)');
-                        card.addEventListener('mouseleave', () => card.style.transform = 'scale(1)');
-                    });
-                })
-                .catch(err => {
-                    console.error("Error:", err);
-                    document.getElementById('search-result-list').innerHTML = '<div class="text-center w-100"><p class="text-danger">데이터를 불러오는데 실패했습니다.</p></div>';
-                });
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            });
+
+            // 3. 페이지네이션 처리 (여기가 핵심!)
+            
+            // 전체 페이지가 1개 이하면 버튼 숨김
+            if (data.totalPages <= 1) {
+                pagination.classList.add('d-none');
+            } else {
+                pagination.classList.remove('d-none');
+                
+                // [안전장치 1] NaN 방지
+                currentPage = (typeof data.number !== 'undefined') ? data.number : 0;
+                totalPages = data.totalPages; // 전체 페이지 수 저장
+
+                // [안전장치 2] 버튼 활성화/비활성화 (UI)
+                document.getElementById('page-indicator').innerText = currentPage + 1;
+                document.getElementById('btn-prev').disabled = data.first; // 첫 페이지면 '이전' 끔
+                document.getElementById('btn-next').disabled = data.last;  // 마지막 페이지면 '다음' 끔
+            }
+
+        } catch (err) {
+            console.error("Error:", err);
         }
-    </script>
+    }
+
+    // ==========================================
+    // 3. 페이지 이동 함수 (강력한 방어 코드)
+    // ==========================================
+    function prevPage() { 
+        if (currentPage > 0) {
+            loadItems(currentPage - 1); 
+        }
+    }
+    
+    function nextPage() { 
+        // [핵심] 현재 페이지가 (전체 페이지 - 1)보다 작을 때만 이동 가능
+        // 예: 전체 5페이지(0~4)일 때, 현재가 3이면 4로 갈 수 있음. 4면 못 감.
+        if (currentPage < totalPages - 1) { 
+            loadItems(currentPage + 1); 
+        }
+    }
+
+    function searchItem() {
+        const keyword = document.getElementById('searchInput').value;
+        if (!keyword.trim()) {
+            alert("검색어를 입력해주세요!");
+            return;
+        }
+        location.href = `/item-search.html?keyword=${encodeURIComponent(keyword)}`;
+    }
+
+    async function deleteItem(event, itemId) {
+        event.stopPropagation(); 
+        if(!confirm('관리자 권한으로 삭제하시겠습니까?')) return;
+
+        const token = localStorage.getItem('accessToken');
+        try {
+            const res = await fetch(`/api/admin/items/${itemId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if(res.ok) {
+                alert('삭제되었습니다.');
+                location.reload();
+            } else {
+                alert('삭제 실패');
+            }
+        } catch (e) { console.error(e); }
+    }
+</script>
 </body>
 </html>

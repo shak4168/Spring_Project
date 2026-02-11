@@ -65,13 +65,21 @@ public class Member extends BaseEntity{
     @Enumerated(EnumType.STRING)
     private Role role; // 권한 (USER, SELLER, ADMIN)
 
-    // BaseEntity(공통컬럼)는 다음 단계에 적용할 예정이라 일단 필드 직접 작성
-    private LocalDateTime createdAt;
+	 // ▼  소셜 로그인 구분용 필드
+    private String provider;    // google, naver, kakao
+    private String providerId;  // sub (구글 식별자)
     
+    // ▼  소셜 로그인 정보 업데이트용 메서드
+    public Member update(String name) {
+        this.name = name;
+        return this;
+    }
+
     @Builder
     public Member(String email, String password, String name, String phone, Role role,
-                  String birthDate, String zipcode, String address, String detailAddress) { // 생성자에도 추가
-    	this.email = email;
+                  String birthDate, String zipcode, String address, String detailAddress,
+                  String provider, String providerId) { 
+        this.email = email;
         this.password = password;
         this.name = name;
         this.phone = phone;
@@ -80,6 +88,23 @@ public class Member extends BaseEntity{
         this.zipcode = zipcode;
         this.address = address;
         this.detailAddress = detailAddress;
+        this.provider = provider;     
+        this.providerId = providerId; 
     }
+    
+    // 소셜 회원가입 마무리용 정보 업데이트
+    public void updateSocialInfo(String phone, String zipcode, String address, String detailAddress, Role role) {
+        this.phone = phone;
+        this.zipcode = zipcode;
+        this.address = address;
+        this.detailAddress = detailAddress;
+        this.role = role;
+    }
+    
+ //  관리자(Admin)가 유저의 권한을 변경할 때 사용 (Dirty Checking용)
+    public void updateRole(Role role) {
+        this.role = role;
+    }
+
 
 }

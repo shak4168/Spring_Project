@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입 마무리</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light py-5">
+    <div class="container" style="max-width: 500px;">
+        <div class="card shadow border-0">
+            <div class="card-body p-5">
+                <h3 class="text-center fw-bold mb-4">추가 정보 입력</h3>
+                <p class="text-center text-muted mb-4 small">
+                    소셜 계정이 확인되었습니다.<br>
+                    서비스 이용을 위해 나머지 정보를 입력해주세요.
+                </p>
+
+                <label class="form-label fw-bold">가입 유형</label>
+                <div class="d-flex gap-2 mb-3">
+                    <input type="radio" class="btn-check" name="role" id="roleUser" value="USER" checked>
+                    <label class="btn btn-outline-primary flex-fill py-2" for="roleUser">🛒 구매자</label>
+
+                    <input type="radio" class="btn-check" name="role" id="roleSeller" value="SELLER">
+                    <label class="btn btn-outline-success flex-fill py-2" for="roleSeller">💼 판매자</label>
+                </div>
+
+                <div class="mb-3">
+                    <label for="phone" class="form-label fw-bold">전화번호</label>
+                    <input type="text" id="phone" class="form-control" placeholder="010-0000-0000">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">주소</label>
+                    <div class="input-group mb-2">
+                        <input type="text" id="zipcode" class="form-control" placeholder="우편번호" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="execDaumPostcode()">검색</button>
+                    </div>
+                    <input type="text" id="address" class="form-control mb-2" placeholder="기본 주소" readonly>
+                    <input type="text" id="detailAddress" class="form-control" placeholder="상세 주소를 입력해주세요 (예: 101동 101호)">
+                </div>
+
+                <button onclick="finishJoin()" class="btn btn-dark w-100 py-3 fw-bold mt-2">가입 완료하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+    
+    <script>
+        // 1. URL에 있는 토큰 저장
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+        if(token) localStorage.setItem('accessToken', token);
+
+        // 2. 카카오 주소 검색 함수
+        function execDaumPostcode() {
+            new daum.Postcode({
+                oncomplete: function(data) {
+                    // 팝업에서 검색결과 항목을 클릭했을때 실행할 코드를 작성하는 부분.
+                    let addr = ''; // 주소 변수
+
+                    // 사용자가 선택한 주소 타입에 따라 해당 주소 값을 가져온다.
+                    if (data.userSelectedType === 'R') { // 도로명 주소
+                        addr = data.roadAddress;
+                    } else { // 지번 주소
+                        addr = data.jibunAddress;
+                    }
+
+                    // 우편번호와 주소 정보를 해당 필드에 넣는다.
+                    document.getElementById('zipcode').value = data.zonecode;
+                    document.getElementById("address").value = addr;
+                    // 상세주소로 포커스 이동
+                    document.getElementById("detailAddress").focus();
+                }
+            }).open();
+        }
+
+        // 3. 가입 완료 요청
+        async function finishJoin() {
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const phone = document.getElementById('phone').value;
+            const zipcode = document.getElementById('zipcode').value;
+            const address = document.getElementById('address').value;
+            const detailAddress = document.getElementById('detailAddress').value;
+
+            // 유효성 검사
+            if(!phone) { alert("전화번호를 입력해주세요."); return; }
+            if(!zipcode || !address) { alert("주소를 검색해주세요."); return; }
+
+            const reqData = {
+                role: role,
+                phone: phone,
+                zipcode: zipcode,
+                address: address,
+                detailAddress: detailAddress
+            };
+
+            try {
+                const res = await fetch('/api/members/social-update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('accessToken')
+                    },
+                    body: JSON.stringify(reqData)
+                });
+
+                if(res.ok) {
+                    alert("가입이 성공적으로 완료되었습니다! 환영합니다.");
+                    localStorage.setItem('role', role); // 선택한 역할 로컬스토리지 갱신
+                    location.href = "/"; // 메인으로 이동
+                } else {
+                    alert("가입 처리에 실패했습니다. 다시 시도해주세요.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("서버 통신 오류");
+            }
+        }
+    </script>
+</body>
+</html>

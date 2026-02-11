@@ -1,5 +1,7 @@
 package com.project.web.repository;
 
+import java.util.List;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -34,4 +36,8 @@ public interface OrderRepository extends JpaRepository<Orders, Long> {
     boolean existsByEmailAndItemId(@Param("email") String email, 
                                    @Param("itemId") Long itemId,
                                    @Param("status") OrderStatus status);
+    
+ // ▼▼▼ [추가] 관리자용: 특정 회원의 모든 주문 내역 조회 ▼▼▼
+    // 메서드 이름만 잘 지으면 JPA가 알아서 "WHERE member_id = ?" 쿼리를 날려줍니다.
+    List<Orders> findByMemberId(Long memberId);
 }

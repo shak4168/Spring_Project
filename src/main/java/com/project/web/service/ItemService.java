@@ -123,4 +123,11 @@ public class ItemService {
         return itemPage.map(item -> new ItemResponseDTO(item));
     }
     
+    @Transactional
+    public void deleteItem(Long itemId) {
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 상품이 없습니다."));
+        
+        itemRepository.delete(item);
+    }
 }

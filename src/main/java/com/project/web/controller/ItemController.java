@@ -24,6 +24,8 @@ import com.project.web.dto.item.ItemResponseDTO;
 import com.project.web.repository.ItemRepository; // [New] 검색을 위해 리포지토리 추가
 import com.project.web.service.ItemService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/api/items")
 @RequiredArgsConstructor
+@Tag(name = "5. 상품(Item)", description = "상품 등록, 전체 조회(페이징), 상세 조회 및 검색 기능을 제공합니다.")
 public class ItemController {
 
     private final ItemService itemService;
@@ -41,6 +44,7 @@ public class ItemController {
      * 권한: 관리자(ADMIN)만 가능해야 함 (지금은 누구나 가능하게 열어둠)
      */
     @PostMapping
+    @Operation(summary = "상품 등록", description = "상품 정보를 받아 새로운 상품을 등록합니다.")
     public ResponseEntity<String> createItem(
             @ModelAttribute ItemFormRequestDTO requestDTO,
             Principal principal // 시큐리티가 현재 로그인한 유저 정보를 넣어줌
@@ -60,6 +64,7 @@ public class ItemController {
      * 상품 목록 조회 API (페이징 + 카테고리 적용)
      * [GET] /api/items?page=0&categoryId=1
      */
+    @Operation(summary = "상품 목록 조회", description = "카테고리별 상품 목록을 페이징하여 조회합니다.")
     @GetMapping
     public ResponseEntity<Page<ItemResponseDTO>> getItems(
             @RequestParam(value = "page", defaultValue = "0") int page,
@@ -80,6 +85,7 @@ public class ItemController {
      * 설명: 검색어(keyword)를 받아서 상품명에 포함된 아이템을 찾습니다.
      * URL: /api/items/search?keyword=나이키&page=0
      */
+    @Operation(summary = "상품 검색", description = "키워드가 포함된 상품을 검색합니다.")
     @GetMapping("/search")
     public ResponseEntity<Page<ItemResponseDTO>> searchItems(
             @RequestParam("keyword") String keyword,
@@ -99,6 +105,7 @@ public class ItemController {
      * 상품 상세 조회 API
      * [GET] /api/items/{itemId}
      */
+    @Operation(summary = "상품 상세 조회", description = "상품 ID로 상세 정보를 조회합니다.")
     @GetMapping("/{itemId}")
     public ResponseEntity<ItemDetailResponseDTO> getItemDetail(@PathVariable("itemId") Long itemId) {
         ItemDetailResponseDTO itemDetail = itemService.getItemDetail(itemId);
