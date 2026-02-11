@@ -19,11 +19,16 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       file.dir: /app/images/
-
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
     volumes:
         # 서버폴더 : 컨테이너폴더 연결
         # 서버의 ./images 폴더를 컨테이너 내부의 /app/images 로 연결합니다.
         - ./images:/app/images
+
+  # 순서 보장 (Redis가 먼저 켜져야 함)
+    depends_on:
+      - redis
 
   # 2. Nginx (Web Server)
   nginx:
@@ -36,3 +41,11 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - backend
+
+  # 3. Redis 컨테이너 새로 만들기
+  redis:
+    image: redis:latest
+    container_name: shop-redis
+    restart: always
+    ports:
+      - "6379:6379"
