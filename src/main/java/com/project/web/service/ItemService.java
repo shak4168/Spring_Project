@@ -2,13 +2,15 @@ package com.project.web.service;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.project.web.config.RestPage;
 import com.project.web.domain.category.Category;
 import com.project.web.domain.item.Item;
 import com.project.web.domain.member.Member;
@@ -103,27 +105,31 @@ public class ItemService {
     
     
     /**
-     * 메인 페이지 상품 목록 조회 (페이징 + 카테고리 필터링)
+     * 메인 페이지 상품 목록 조회 (캐싱 적용)
+     * [Cacheable] 
+     * - value: 캐시 저장소 이름
+     * - key: 카테고리ID와 페이지 번호를 조합해 고유 키 생성 (예: mainItems::1-0)
+     * - condition: 첫 페이지만 캐싱하거나 특정 조건에서만 작동하도록 설정 가능
      */
-    public Page<ItemResponseDTO> getMainItemPage(Long categoryId, Pageable pageable) {
-        
-        Page<Item> itemPage;
+    @Cacheable(value = "mainItems", 
+            key = "(#a0 == null ? 'all' : #a0) + '-' + #a1.pageNumber")
+ // 1. 반환 타입을 RestPage로 변경
+    public RestPage<ItemResponseDTO> getMainItemPage(Long categoryId, Pageable pageable) {
+        System.out.println("[DB 조회] 메인 페이지 상품 목록을 DB에서 가져옵니다. Category: " + categoryId);
 
-        // 1. 카테고리 ID 유무에 따른 분기 처리
+        Page<Item> itemPage;
         if (categoryId == null) {
-            // 카테고리가 없으면 전체 조회
             itemPage = itemRepository.findAll(pageable);
         } else {
-            // 카테고리가 있으면 해당 카테고리 상품만 조회
             itemPage = itemRepository.findByCategoryId(categoryId, pageable);
         }
 
-        // 2. Entity(Item) -> DTO(ItemResponseDTO) 변환
-        // Page 객체의 map 기능을 쓰면 내부 내용물을 아주 쉽게 바꿀 수 있음
-        return itemPage.map(item -> new ItemResponseDTO(item));
+        // 2. 결과를 RestPage로 감싸서 반환
+        return new RestPage<>(itemPage.map(ItemResponseDTO::new));
     }
     
     @Transactional
+    @CacheEvict(value = "mainItems", allEntries = true)
     public void deleteItem(Long itemId) {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 상품이 없습니다."));
