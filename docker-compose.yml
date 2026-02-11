@@ -16,6 +16,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://172.16.0.6:3306/shop
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
       file.dir: /app/images/
 
     volumes:
