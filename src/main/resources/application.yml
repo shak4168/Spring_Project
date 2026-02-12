@@ -81,3 +81,12 @@ jwt:
 encryption:
   # 32자 이상의 임의의 문자열 (실무에선 절대 노출 금지 -> 환경변수 처리)
   secret: ${ENCRYPTION_KEY:MySecretKeyForAes256Test12345678}
+  
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics # 핵심 정보 노출
+  endpoint:
+    health:
+      show-details: always # DB 연결 상태까지 자세히 보기

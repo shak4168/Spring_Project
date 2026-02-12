@@ -60,9 +60,9 @@ public class SecurityConfig {
             // 1. 화면(HTML)과 정적 리소스는 다 열어둠 (/**/*.html 로 수정하여 하위 폴더 포함)
             .requestMatchers("/", "/**/*.html", "/css/**", "/js/**", "/images/**", "/favicon.ico", "/error").permitAll()
             
-            // 2. Swagger 문서 허용
+            // 2. Swagger 문서 / actuator 허용
             .requestMatchers("/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**").permitAll()
-            
+            .requestMatchers("/actuator/**").permitAll()
             // 3. 관리자 페이지 HTML 접근 허용 (중요! API는 아래 anyRequest에서 막힘)
             .requestMatchers("/admin/**").permitAll()
 
