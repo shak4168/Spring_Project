@@ -13,10 +13,12 @@ import java.util.UUID;
  * */
 
 @Component // 스프링이 관리하는 '일꾼(Bean)'으로 등록
-public class FileStore {
+public class LocalFileStore implements FileStorageService {
 	// 파일을 저장할 경로입니다. 설정 파일(yml)에 없으면 기본값으로 C드라이브 경로를 사용
-    @Value("${file.dir:C:/web-project/images/}")
-    private String fileDir;
+    //@Value("${file.dir:C:/web-project/images/}")
+    
+	@Value("${file.dir:/app/images/}")
+	private String fileDir;
 
     // 파일을 받아서 저장하고, '저장된 파일명'을 돌려주는 메인 함수
     public String storeFile(MultipartFile multipartFile) throws IOException {
@@ -48,6 +50,8 @@ public class FileStore {
     // 확장자만 떼어내는 보조 함수
     private String extractExt(String originalFilename) {
         int pos = originalFilename.lastIndexOf(".");
+        if(pos == -1)
+        	return "";
         return originalFilename.substring(pos + 1);
     }
     

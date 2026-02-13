@@ -12,6 +12,7 @@ import com.project.web.domain.BaseEntity;
 import com.project.web.domain.category.Category;
 import com.project.web.domain.member.Member;
 import com.project.web.domain.review.Review;
+import com.project.web.exception.NotEnoughStockException;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -26,6 +27,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -85,7 +87,7 @@ public class Item extends BaseEntity {
     @ColumnDefault("0.0")
     private double averageRating;
     
- // 판매 상태 필드 (SELL, SOLD_OUT)
+    // 판매 상태 필드 (SELL, SOLD_OUT)
     @Enumerated(EnumType.STRING)
     private ItemSellStatus itemSellStatus;
     
@@ -104,6 +106,14 @@ public class Item extends BaseEntity {
     // 상품 삭제 시 리뷰도 같이 관리 (Cascade)
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Review> reviews = new ArrayList<>();
+    
+    /* =============================================
+     * 동시성 제어를 위한 낙관적 락 필드 추가
+     * - 이 필드가 있으면 JPA가 수정 시 버전을 체크합니다.
+     * ============================================= */
+    @Version
+    private Long version;
+    
     
     /* =============================================
      * 생성자 (Builder Pattern)
@@ -133,8 +143,7 @@ public class Item extends BaseEntity {
     public void removeStock(int count) {
         int restStock = this.stockQuantity - count;
         if (restStock < 0) {
-            // [트러블슈팅] 동시성 문제 발생 가능 지점 -> 추후 낙관적 락(@Version) 또는 비관적 락으로 개선 포인트
-            throw new IllegalStateException("재고가 부족합니다."); 
+            throw new NotEnoughStockException("재고가 부족합니다."); 
         }
         this.stockQuantity = restStock;
         

@@ -20,7 +20,7 @@ import com.project.web.dto.item.ItemResponseDTO;
 import com.project.web.repository.CategoryRepository;
 import com.project.web.repository.ItemRepository;
 import com.project.web.repository.MemberRepository;
-import com.project.web.util.FileStore;
+import com.project.web.util.FileStorageService;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +40,7 @@ public class ItemService {
     private final ItemRepository itemRepository;
     private final CategoryRepository categoryRepository;
     private final MemberRepository memberRepository;
-    private final FileStore fileStore;
+    private final FileStorageService fileStorageService;
 
     /**
      * 상품 등록 (쓰기 작업이므로 readOnly = false 적용)
@@ -57,7 +57,7 @@ public class ItemService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 카테고리가 존재하지 않습니다. id=" + dto.getCategoryId()));
 
         // 3. 이미지 파일 저장
-        String storeFileName = fileStore.storeFile(dto.getImageFile());
+        String storeFileName = fileStorageService.storeFile(dto.getImageFile());
 
         // 4. 상품 엔티티 생성
         Item item = Item.builder()
