@@ -48,11 +48,7 @@ public class ReviewController {
             
         // 5개씩 조회, 최신순 정렬
         Pageable pageable = PageRequest.of(page.orElse(0), 5, Sort.by(Sort.Direction.DESC, "createdAt"));
-        System.out.println("=====================================");
-        System.out.println("1. 요청된 Item ID: " + itemId);
         Page<ReviewResponseDTO> reviews = reviewService.getReviewList(itemId, pageable);
-        System.out.println("2. 조회된 리뷰 개수: " + reviews.getTotalElements());
-        System.out.println("=====================================");
         return ResponseEntity.ok(reviews);
     }
 

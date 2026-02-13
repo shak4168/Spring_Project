@@ -115,8 +115,6 @@ public class ItemService {
             key = "(#a0 == null ? 'all' : #a0) + '-' + #a1.pageNumber")
  // 1. 반환 타입을 RestPage로 변경
     public RestPage<ItemResponseDTO> getMainItemPage(Long categoryId, Pageable pageable) {
-        System.out.println("[DB 조회] 메인 페이지 상품 목록을 DB에서 가져옵니다. Category: " + categoryId);
-
         Page<Item> itemPage;
         if (categoryId == null) {
             itemPage = itemRepository.findAll(pageable);
