@@ -52,7 +52,7 @@ jobs:
         username: ${{ secrets.SERVER_USER }}
         password: ${{ secrets.SERVER_PASSWORD }}
         port: 22
-        source: "docker-compose.yml"
+        source: "docker-compose.yml,nginx.conf"
         target: "/root/Spring_Project/"
 
     # 8. 서버 접속 및 배포 실행 (SSH)
