@@ -385,13 +385,90 @@
         }).open();
     }
     
-    // 페이지네이션, 주문취소, 리뷰 관련 함수들은 기존과 동일하므로 생략하지 않고 
-    // 실제 사용 시에는 이전에 작성해주신 함수들(renderPagination, cancelOrder, openReviewModal, submitReview)을
-    // 그대로 복사해서 여기에 넣으셔야 합니다! (위 코드에는 일부 생략됨)
+
+ // ==========================================
+    // 주문 내역 페이징(Pagination) 렌더링 로직
+    // ==========================================
+    function renderPagination(pageData) {
+        const paginationArea = document.getElementById('pagination-area');
+        paginationArea.innerHTML = ''; // 기존 페이징 초기화
+
+        // 데이터가 아예 없으면 페이징을 그릴 필요가 없음
+        if (pageData.totalPages === 0) return;
+
+        // Spring Data JPA의 Page 객체는 0번부터 시작합니다 (pageData.number)
+        const currentPage = pageData.number; 
+        const totalPages = pageData.totalPages;
+        const maxPageButton = 5; // 화면에 한 번에 보여줄 페이지 버튼 개수 (예: 1 2 3 4 5)
+
+        // 페이징 블록의 시작과 끝 계산 (예: 현재 3페이지면 블록은 1~5)
+        let startPage = Math.floor(currentPage / maxPageButton) * maxPageButton;
+        let endPage = startPage + maxPageButton - 1;
+        if (endPage >= totalPages) {
+            endPage = totalPages - 1;
+        }
+
+        let html = '';
+
+        // 1. [이전] 버튼
+        // 현재 블록의 시작 페이지가 0이면 이전으로 갈 수 없으므로 disabled 처리
+        const prevDisabled = (startPage === 0) ? 'disabled' : '';
+        html += `<li class="page-item ${prevDisabled}">
+                    <a class="page-link" href="javascript:void(0)" onclick="loadOrderHist(${startPage - 1})">이전</a>
+                 </li>`;
+
+        // 2. [페이지 번호] 버튼들
+        for (let i = startPage; i <= endPage; i++) {
+            // 현재 보고 있는 페이지면 파란색(active)으로 하이라이트
+            const activeClass = (i === currentPage) ? 'active' : '';
+            html += `<li class="page-item ${activeClass}">
+                        <a class="page-link" href="javascript:void(0)" onclick="loadOrderHist(${i})">${i + 1}</a>
+                     </li>`;
+        }
+
+        // 3. [다음] 버튼
+        // 현재 블록의 끝 페이지가 전체 페이지의 마지막이면 다음으로 갈 수 없으므로 disabled 처리
+        const nextDisabled = (endPage === totalPages - 1) ? 'disabled' : '';
+        html += `<li class="page-item ${nextDisabled}">
+                    <a class="page-link" href="javascript:void(0)" onclick="loadOrderHist(${endPage + 1})">다음</a>
+                 </li>`;
+
+        // 완성된 HTML을 화면에 삽입
+        paginationArea.innerHTML = html;
+    }
     
-    // [중요] 기존 함수들 (복붙용)
-    function renderPagination(pageData) { /* ... 이전 코드 참조 ... */ }
-    function cancelOrder(orderId) { /* ... 이전 코드 참조 ... */ }
+ // ==========================================
+    // 주문 취소 로직
+    // ==========================================
+    function cancelOrder(orderId) {
+        if(!confirm("정말 이 주문을 취소하시겠습니까?")) return;
+
+        const token = localStorage.getItem('accessToken');
+        
+        fetch(`/api/orders/${orderId}/cancel`, {
+            method: 'POST', // 컨트롤러의 @PostMapping과 일치시킴
+            headers: { 
+                'Authorization': 'Bearer ' + token 
+            }
+        })
+        .then(res => {
+            if (res.status === 401) {
+                alert("세션이 만료되었습니다. 다시 로그인해주세요.");
+                location.href = '/login.html';
+                return Promise.reject("Unauthorized");
+            }
+            if (res.ok) {
+                alert("주문이 취소되었습니다.");
+                location.reload(); // 성공 시 화면 새로고침하여 상태 변경(취소됨) 반영
+            } else {
+                return res.text().then(text => { throw new Error(text) });
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("취소 실패: " + err.message);
+        });
+    }
     function openReviewModal(itemId) {
         document.getElementById('modalItemId').value = itemId;
         document.getElementById('reviewContent').value = '';

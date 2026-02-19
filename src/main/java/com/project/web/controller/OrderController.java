@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -78,4 +79,23 @@ public class OrderController {
         // 4. 결과 반환
         return ResponseEntity.ok(orderHistDtoPage);
     }
+    
+    /* 주문 취소 API
+    * [POST] /api/orders/{orderId}/cancel
+    */
+   @Operation(summary = "주문 취소", description = "사용자가 자신의 주문을 취소합니다.")
+   @PostMapping("/api/orders/{orderId}/cancel")
+   public ResponseEntity<String> cancelOrder(@PathVariable Long orderId, Principal principal) {
+       
+       // 1. 로그인 체크
+       if (principal == null) {
+           return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
+       }
+
+       // 2. 서비스 로직 호출 (재고 원상복구 포함)
+       orderService.cancelOrder(orderId);
+
+       return ResponseEntity.ok("주문이 성공적으로 취소되었습니다.");
+   }
+    
 }
