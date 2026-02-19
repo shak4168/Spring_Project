@@ -112,8 +112,7 @@ public class Item extends BaseEntity {
      * - 이 필드가 있으면 JPA가 수정 시 버전을 체크합니다.
      * ============================================= */
     @Version
-    private Long version;
-    
+    private Long version = 0L;    
     
     /* =============================================
      * 생성자 (Builder Pattern)
