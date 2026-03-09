@@ -1,5 +1,4 @@
 package com.project.web.dto.member;
-import com.project.web.domain.member.Role;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -37,8 +36,5 @@ public class MemberJoinRequestDTO {
 
     @Schema(description = "상세 주소", example = "101동 101호")
     private String detailAddress;
-
-    @Schema(description = "권한 등급 (USER, SELLER, ADMIN)", example = "USER")
-    private Role role;
 		
 }

@@ -77,16 +77,11 @@ public class ItemService {
     }
     
     public ItemDetailResponseDTO getItemDetail(Long itemId) {
-        // 1. 상품 조회 (삭제되지 않은 상품만 조회 로직은 나중에 QueryDSL이나 커스텀 메서드로 고도화 가능)
+        //  상품 조회 (삭제되지 않은 상품만 조회 로직은 나중에 QueryDSL이나 커스텀 메서드로 고도화 가능)
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 상품입니다."));
 
-        // 2. Soft Delete 체크 (이미 삭제된 상품이면 예외 발생)
-        if ("Y".equals(item.getDelYn())) {
-            throw new EntityNotFoundException("이미 삭제된 상품입니다.");
-        }
-
-        // 3. Entity -> DTO 변환 
+        //  Entity -> DTO 변환 
         // Batch Size 설정 덕분에 여기서 getReviews(), getReplies() 호출 시 쿼리가 최적화되어 나감
         return ItemDetailResponseDTO.builder()
                 .itemId(item.getId())
@@ -95,13 +90,10 @@ public class ItemService {
                 .price(item.getPrice())
                 .stockNumber(item.getStockQuantity())
                 .imageUrl(item.getImageUrl())
-                .reviewCount((long) item.getReviews().size()) 
+                .reviewCount((long) item.getReviewCount()) 
+                .averageRating(item.getAverageRating())    
                 .build();
     }
-    
-    public List<Item> findAllItems() {
-    	return itemRepository.findAll();
-    	}
     
     
     /**
@@ -133,5 +125,10 @@ public class ItemService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 상품이 없습니다."));
         
         itemRepository.delete(item);
+    }
+    
+    public Page<ItemResponseDTO> searchItems(String keyword, Pageable pageable) {
+        return itemRepository.findByNameContaining(keyword, pageable)
+                .map(ItemResponseDTO::new);
     }
 }

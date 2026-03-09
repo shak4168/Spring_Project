@@ -14,10 +14,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.project.web.domain.member.Member;
 import com.project.web.dto.order.OrderHistDTO;
 import com.project.web.dto.order.OrderRequestDTO;
-import com.project.web.repository.MemberRepository;
 import com.project.web.service.OrderService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,7 +28,6 @@ import lombok.RequiredArgsConstructor;
 public class OrderController {
 
     private final OrderService orderService;
-    private final MemberRepository memberRepository;
 
     /*
      * 상품 주문 API
@@ -45,13 +42,8 @@ public class OrderController {
             return ResponseEntity.status(401).body("로그인이 필요합니다.");
         }
 
-        // 2. 로그인한 회원의 ID 찾기 (이메일로 조회)
-        String email = principal.getName();
-        Member member = memberRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("회원 정보가 없습니다."));
+        orderService.order(principal.getName(), request.getItemId(), request.getCount());
 
-        // 3. 주문 서비스 호출 (회원ID, 상품ID, 수량)
-        orderService.order(member.getId(), request.getItemId(), request.getCount());
 
         return ResponseEntity.ok("주문이 완료되었습니다!");
     }
@@ -70,14 +62,12 @@ public class OrderController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        // 2. 페이징 요청 객체 생성 (page: 현재 페이지, 5: 한 페이지에 보여줄 개수)
+        //  페이징 요청 객체 생성 (page: 현재 페이지, 5: 한 페이지에 보여줄 개수)
         Pageable pageable = PageRequest.of(page, 5);
 
-        // 3. 서비스 호출 (이제 Page<OrderHistDTO>가 반환됨)
-        Page<OrderHistDTO> orderHistDtoPage = orderService.getOrderList(principal.getName(), pageable);
+        //  결과 반환
+        return ResponseEntity.ok(orderService.getOrderList(principal.getName(), pageable));
 
-        // 4. 결과 반환
-        return ResponseEntity.ok(orderHistDtoPage);
     }
     
     /* 주문 취소 API
@@ -87,12 +77,12 @@ public class OrderController {
    @PostMapping("/api/orders/{orderId}/cancel")
    public ResponseEntity<String> cancelOrder(@PathVariable Long orderId, Principal principal) {
        
-       // 1. 로그인 체크
+       //  로그인 체크
        if (principal == null) {
            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인이 필요합니다.");
        }
 
-       // 2. 서비스 로직 호출 (재고 원상복구 포함)
+       // 서비스 로직 호출 (재고 원상복구 포함)
        orderService.cancelOrder(orderId);
 
        return ResponseEntity.ok("주문이 성공적으로 취소되었습니다.");

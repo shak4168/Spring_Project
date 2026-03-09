@@ -45,10 +45,10 @@ public class OrderService {
      * [주문]
      */
     @Transactional
-    public Long order(Long memberId, Long itemId, int count) {
+    public Long order(String email, Long itemId, int count)  {
 
         // 1. 엔티티 조회
-        Member member = memberRepository.findById(memberId)
+        Member member = memberRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("회원을 찾을 수 없습니다."));
 
         Item item = itemRepository.findById(itemId)
@@ -58,12 +58,12 @@ public class OrderService {
         // 실무에서는 Member에 저장된 주소를 가져오거나, 화면에서 입력받은 값을 써야 함
         // 여기서는 임시 값으로 대체
         Delivery delivery = Delivery.builder()
-                .address("서울시 강남구 테헤란로") 
-                .detailAddress("101호")
-                .zipcode("12345")
-                .status(DeliveryStatus.READY)
-                .build();
-
+        		 .address(member.getAddress())   
+                 .detailAddress(member.getDetailAddress())
+                 .zipcode(member.getZipcode())
+                 .status(DeliveryStatus.READY)
+                 .build();
+        
         // 3. 주문 상품 생성 (이때 item.removeStock()이 실행되어 재고가 차감됨)
         OrderItem orderItem = OrderItem.createOrderItem(item, item.getPrice(), count);
 
@@ -124,7 +124,9 @@ public class OrderService {
 
         // 5. 배송 정보 생성 (임시)
         Delivery delivery = Delivery.builder()
-                .address("서울시 강남구")
+                .address(member.getAddress())  
+                .detailAddress(member.getDetailAddress())
+                .zipcode(member.getZipcode())
                 .status(DeliveryStatus.READY)
                 .build();
 

@@ -42,7 +42,7 @@ public abstract class BaseEntity {
         // 2. 수정시간도 같이 맞춤
         this.updatedAt = LocalDateTime.now();
 
-        // 3. [중요] 빌더 패턴 사용 시 delYn이 null로 들어오는 것을 방지
+        // 3. 빌더 패턴 사용 시 delYn이 null로 들어오는 것을 방지
         if (this.delYn == null) {
             this.delYn = "N";
         }

@@ -1,6 +1,5 @@
 package com.project.web.domain.item;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,14 +65,6 @@ public class Item extends BaseEntity {
     @Column(name = "img_url") // DB 컬럼명은 스네이크 케이스(img_url) 권장
     private String imageUrl; 
 
-    /* =============================================
-     * Soft Delete (논리적 삭제) 필드
-     * ============================================= */
-    @Column(name = "del_yn", length = 1)
-    @ColumnDefault("'N'") // DDL 생성 시 기본값 설정
-    private String delYn = "N"; // Java 객체 초기값
-
-    private LocalDateTime deletedAt; // 삭제된 시간 (복구 및 이력 관리용)
 
     /* =============================================
      * 반정규화 필드 (성능 최적화)
@@ -127,8 +118,6 @@ public class Item extends BaseEntity {
         this.category = category;
         this.seller = seller;
         this.itemSellStatus = itemSellStatus != null ? itemSellStatus : ItemSellStatus.SELL;
-        // 초기값 명시적 설정
-        this.delYn = "N"; 
         this.reviewCount = 0;
         this.averageRating = 0.0;
     }

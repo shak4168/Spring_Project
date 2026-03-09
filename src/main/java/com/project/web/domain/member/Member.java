@@ -1,5 +1,7 @@
 package com.project.web.domain.member;
-import java.time.LocalDateTime;
+
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import com.project.web.domain.BaseEntity;
 
@@ -12,12 +14,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Where;
 /*
  * Member 클래스
  * 회원 테이블을 생성
@@ -25,8 +24,6 @@ import org.hibernate.annotations.Where;
 
 @Entity // 이 클래스는 테이블이라고 선언
 @Getter
-@Builder // 빌더 패턴 사용 가능하게 함
-@AllArgsConstructor // 빌더를 위해 모든 필드 생성자 자동 생성
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 //1. 삭제(delete) 명령이 오면 -> 이 UPDATE 문을 대신 실행해라!
 //- del_yn = 'Y' 로 변경
@@ -105,6 +102,5 @@ public class Member extends BaseEntity{
     public void updateRole(Role role) {
         this.role = role;
     }
-
 
 }

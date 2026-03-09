@@ -16,6 +16,7 @@ public interface OrderRepository extends JpaRepository<Orders, Long> {
 	// join fetch 추가 + countQuery 최적화
     @Query(value = "select distinct o from Orders o " +
             "left join fetch o.orderItems " + 
+            "left join fetch oi.item " +
             "where o.member.email = :email " +
             "order by o.orderDate desc",
             

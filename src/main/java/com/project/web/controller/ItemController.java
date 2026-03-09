@@ -17,11 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.project.web.domain.item.Item; // [New] 리포지토리 반환 타입
 import com.project.web.dto.item.ItemDetailResponseDTO;
 import com.project.web.dto.item.ItemFormRequestDTO;
 import com.project.web.dto.item.ItemResponseDTO;
-import com.project.web.repository.ItemRepository; // [New] 검색을 위해 리포지토리 추가
 import com.project.web.service.ItemService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 public class ItemController {
 
     private final ItemService itemService;
-    private final ItemRepository itemRepository; // [New] 검색 기능을 위해 주입받음
 
     /**
      * 상품 등록 API
@@ -91,14 +88,7 @@ public class ItemController {
             @RequestParam("keyword") String keyword,
             @PageableDefault(size = 8, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
         
-        // 1. 리포지토리에서 바로 검색 (아까 만든 인덱스 태움)
-        Page<Item> itemPage = itemRepository.findByNameContaining(keyword, pageable);
-        
-        // 2. Entity(Item) -> DTO(ItemResponseDTO) 변환
-        // (ItemResponseDTO 생성자가 Item을 받도록 되어 있다고 가정)
-        Page<ItemResponseDTO> response = itemPage.map(ItemResponseDTO::new);
-        
-        return ResponseEntity.ok(response);
+    	return ResponseEntity.ok(itemService.searchItems(keyword, pageable));
     }
     
     /*

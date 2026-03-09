@@ -35,7 +35,6 @@ public class MemberService {
 	private final OrderRepository orderRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
-    private final AESUtil aesUtil; // 암호화 도구
     
     // 회원가입
     @Transactional
@@ -44,11 +43,7 @@ public class MemberService {
         validateDuplicateMember(dto.getEmail());
 
         Role role = Role.USER; // 기본값
-        if (dto.getRole() == Role.SELLER) {
-            role = Role.SELLER;
-        } else if (dto.getRole() == Role.ADMIN) {
-             role = Role.ADMIN;
-        }
+
         // 2. 비밀번호 암호화 및 엔티티 변환
         Member member = Member.builder()
         		.email(dto.getEmail())
